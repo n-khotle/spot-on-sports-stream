@@ -156,6 +156,10 @@ const Hero = ({ featuredGame }: HeroProps) => {
                   src={featuredGame.trailer_video_url}
                   poster={featuredGame.featured_image_url || undefined}
                   controls
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   className="w-full h-full object-cover"
                   preload="metadata"
                 >
