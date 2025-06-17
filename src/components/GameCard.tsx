@@ -62,7 +62,7 @@ const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewe
           {imageUrl && (
             <img 
               src={imageUrl} 
-              alt={`${homeTeam} vs ${awayTeam}`}
+              alt={awayTeam ? `${homeTeam} vs ${awayTeam}` : homeTeam}
               className="w-full h-full object-cover"
             />
           )}
@@ -81,7 +81,7 @@ const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewe
         <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
           <div className="text-center">
             <h3 className="text-lg sm:text-xl font-bold leading-tight">
-              {homeTeam} <span className="text-muted-foreground">vs</span> {awayTeam}
+              {awayTeam ? `${homeTeam} vs ${awayTeam}` : homeTeam}
             </h3>
           </div>
           
@@ -121,7 +121,7 @@ const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewe
         <PaymentModal 
           open={paymentModalOpen}
           onOpenChange={setPaymentModalOpen}
-          gameTitle={`${homeTeam} vs ${awayTeam}`}
+          gameTitle={awayTeam ? `${homeTeam} vs ${awayTeam}` : homeTeam}
           gameId={homeTeam} // You might want to pass a proper game ID here
         />
       </CardContent>

@@ -35,8 +35,8 @@ const FeaturedGames = () => {
 
   // Transform database games to GameCard format
   const transformedGames = games.map(game => ({
-    homeTeam: game.title.split(' vs ')[0] || game.title,
-    awayTeam: game.title.split(' vs ')[1] || "TBD",
+    homeTeam: game.featured ? game.title : (game.title.split(' vs ')[0] || game.title),
+    awayTeam: game.featured ? "" : (game.title.split(' vs ')[1] || "TBD"),
     league: "Live Stream",
     date: game.game_date ? new Date(game.game_date).toLocaleDateString() : "TBD",
     time: game.game_time || "TBD",
