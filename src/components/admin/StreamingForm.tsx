@@ -54,9 +54,12 @@ const StreamingForm = ({ editingStream, onStreamSaved, onCancel }: StreamingForm
   });
 
   useEffect(() => {
+    console.log('StreamingForm: editingStream changed:', editingStream);
     if (editingStream) {
+      console.log('StreamingForm: Setting form data from editing stream');
       setFormData(editingStream);
     } else {
+      console.log('StreamingForm: Resetting form for new stream');
       // Reset form for new stream
       setFormData({
         name: '',

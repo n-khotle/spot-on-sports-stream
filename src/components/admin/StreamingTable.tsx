@@ -294,7 +294,10 @@ const StreamingTable = ({ onEditStream, onStreamsUpdated }: StreamingTableProps)
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onEditStream(stream)}
+                          onClick={() => {
+                            console.log('Edit button clicked for stream:', stream);
+                            onEditStream(stream);
+                          }}
                           title="Edit Stream"
                         >
                           <Edit className="w-4 h-4" />

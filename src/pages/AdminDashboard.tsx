@@ -120,6 +120,7 @@ const AdminDashboard = () => {
   };
 
   const handleEditStream = (stream: StreamingSettings) => {
+    console.log('AdminDashboard: Setting editing stream:', stream);
     setEditingStream(stream);
   };
 
