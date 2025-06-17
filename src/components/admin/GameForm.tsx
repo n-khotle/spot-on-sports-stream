@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Save } from 'lucide-react';
+import { Plus, Save, Upload, X } from 'lucide-react';
 
 interface Game {
   id: string;
@@ -35,6 +35,55 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
     status: editingGame?.status || 'draft',
     featured: editingGame?.featured || false
   });
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleFileUpload = async (file: File) => {
+    if (!file) return null;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('game-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('game-images')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error: any) {
+      toast({
+        title: "Upload Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    const uploadedUrl = await handleFileUpload(file);
+    if (uploadedUrl) {
+      setFormData({ ...formData, featured_image_url: uploadedUrl });
+    }
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedFile(null);
+    setFormData({ ...formData, featured_image_url: '' });
+  };
 
   const handleSaveGame = async () => {
     try {
@@ -70,6 +119,7 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
 
   const resetForm = () => {
     setFormData({ title: '', description: '', featured_image_url: '', status: 'draft', featured: false });
+    setSelectedFile(null);
   };
 
   const handleCancel = () => {
@@ -111,13 +161,60 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="featured_image_url">Featured Image URL</Label>
-          <Input
-            id="featured_image_url"
-            value={formData.featured_image_url}
-            onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
-            placeholder="https://example.com/image.jpg"
-          />
+          <Label>Featured Image</Label>
+          
+          {/* Image Preview */}
+          {formData.featured_image_url && (
+            <div className="relative border border-border rounded-lg overflow-hidden">
+              <img 
+                src={formData.featured_image_url} 
+                alt="Featured game preview"
+                className="w-full h-32 object-cover"
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-2"
+                onClick={removeSelectedImage}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+          
+          {/* File Upload */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                disabled={uploading}
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+              />
+              {uploading && (
+                <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm">Uploading...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Alternative URL Input */}
+          <div className="space-y-2">
+            <Label htmlFor="featured_image_url" className="text-sm text-muted-foreground">Or enter image URL:</Label>
+            <Input
+              id="featured_image_url"
+              value={formData.featured_image_url}
+              onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
+              placeholder="https://example.com/image.jpg"
+              disabled={uploading}
+            />
+          </div>
         </div>
         
         <div className="space-y-2">
