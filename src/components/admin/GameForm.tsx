@@ -74,7 +74,10 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
 
   const handleFieldChange = (field: string, value: string | boolean | Date | null | string[]) => {
     console.log(`GameForm handleFieldChange - ${field}:`, value);
-    setFormData({ ...formData, [field]: value });
+    console.log('Current formData.game_date before update:', formData.game_date);
+    const newFormData = { ...formData, [field]: value };
+    console.log('New formData after update:', newFormData);
+    setFormData(newFormData);
   };
 
   const handleImageChange = (url: string) => {
