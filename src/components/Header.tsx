@@ -20,9 +20,9 @@ const Header = () => {
           </div>
           
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="#" className="text-foreground hover:text-primary transition-colors">Live</a>
+            <Link to="/" className="text-foreground hover:text-primary transition-colors">Live</Link>
             <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Sports</a>
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Schedule</a>
+            <Link to="/schedule" className="text-muted-foreground hover:text-primary transition-colors">Schedule</Link>
             <a href="#" className="text-muted-foreground hover:text-primary transition-colors">News</a>
           </nav>
         </div>
