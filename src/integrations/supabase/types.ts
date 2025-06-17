@@ -294,6 +294,86 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_prices: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          id: string
+          interval: string
+          interval_count: number
+          nickname: string | null
+          product_id: string
+          stripe_price_id: string | null
+          unit_amount: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          interval: string
+          interval_count?: number
+          nickname?: string | null
+          product_id: string
+          stripe_price_id?: string | null
+          unit_amount: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          interval?: string
+          interval_count?: number
+          nickname?: string | null
+          product_id?: string
+          stripe_price_id?: string | null
+          unit_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_products: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          stripe_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
