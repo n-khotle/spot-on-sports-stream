@@ -201,6 +201,30 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          created_at: string
+          id: string
+          logo_url: string | null
+          site_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          site_name?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          site_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       streaming_settings: {
         Row: {
           auto_record: boolean | null
