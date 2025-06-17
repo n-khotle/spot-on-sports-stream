@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Calendar, Clock } from "lucide-react";
@@ -203,8 +203,8 @@ const Hero = ({ featuredGame }: HeroProps) => {
                     <Play className="w-6 h-6 mr-3 fill-current group-hover:scale-110 transition-transform" />
                     {isGameLive(featuredGame) ? "Watch Live - P15.00" : "Watch Preview - P15.00"}
                   </Button>
-                  <Button variant="outline" size="lg" className="text-lg px-10 py-4 border-2 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300">
-                    Learn More
+                  <Button variant="outline" size="lg" className="text-lg px-10 py-4 border-2 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300" asChild>
+                    <Link to="/about-us">Learn More</Link>
                   </Button>
                 </>
               ) : (
