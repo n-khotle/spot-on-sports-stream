@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LogOut, CreditCard } from 'lucide-react';
 import GameForm from '@/components/admin/GameForm';
 import GamesTable from '@/components/admin/GamesTable';
+import NewsTable from '@/components/admin/NewsTable';
 
 interface Game {
   id: string;
@@ -107,18 +109,31 @@ const AdminDashboard = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <GameForm 
-            editingGame={editingGame} 
-            onGameSaved={handleGameSaved}
-            onCancel={handleCancel}
-          />
-          <GamesTable 
-            games={games} 
-            onEditGame={handleEditGame}
-            onGamesUpdated={fetchGames}
-          />
-        </div>
+        <Tabs defaultValue="games" className="space-y-8">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="games">Games Management</TabsTrigger>
+            <TabsTrigger value="news">News Management</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="games" className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <GameForm 
+                editingGame={editingGame} 
+                onGameSaved={handleGameSaved}
+                onCancel={handleCancel}
+              />
+              <GamesTable 
+                games={games} 
+                onEditGame={handleEditGame}
+                onGamesUpdated={fetchGames}
+              />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="news" className="space-y-8">
+            <NewsTable />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
