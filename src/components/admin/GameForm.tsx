@@ -18,6 +18,7 @@ interface Game {
   featured: boolean;
   game_date?: string | null;
   game_time?: string | null;
+  tags?: string[] | null;
   created_at: string;
 }
 
@@ -37,7 +38,8 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
     status: editingGame?.status || 'draft',
     featured: editingGame?.featured || false,
     game_date: editingGame?.game_date ? new Date(editingGame.game_date) : null,
-    game_time: editingGame?.game_time || ''
+    game_time: editingGame?.game_time || '',
+    tags: editingGame?.tags || []
   });
 
   // Update form data when editingGame changes
@@ -51,7 +53,8 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
         status: editingGame.status,
         featured: editingGame.featured,
         game_date: editingGame.game_date ? new Date(editingGame.game_date) : null,
-        game_time: editingGame.game_time || ''
+        game_time: editingGame.game_time || '',
+        tags: editingGame.tags || []
       });
     } else {
       // Reset form when no game is being edited
@@ -63,12 +66,13 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
         status: 'draft',
         featured: false,
         game_date: null,
-        game_time: ''
+        game_time: '',
+        tags: []
       });
     }
   }, [editingGame]);
 
-  const handleFieldChange = (field: string, value: string | boolean | Date | null) => {
+  const handleFieldChange = (field: string, value: string | boolean | Date | null | string[]) => {
     setFormData({ ...formData, [field]: value });
   };
 
@@ -127,7 +131,8 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
       status: 'draft', 
       featured: false,
       game_date: null,
-      game_time: ''
+      game_time: '',
+      tags: []
     });
   };
 
@@ -155,7 +160,8 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
             status: formData.status,
             featured: formData.featured,
             game_date: formData.game_date,
-            game_time: formData.game_time
+            game_time: formData.game_time,
+            tags: formData.tags
           }}
           onFieldChange={handleFieldChange}
         />

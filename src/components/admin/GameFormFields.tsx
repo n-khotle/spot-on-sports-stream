@@ -1,12 +1,14 @@
+import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Clock } from 'lucide-react';
+import { CalendarIcon, Clock, X, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -17,15 +19,35 @@ interface GameFormData {
   featured: boolean;
   game_date: Date | null;
   game_time: string;
+  tags: string[];
 }
 
 interface GameFormFieldsProps {
   formData: GameFormData;
-  onFieldChange: (field: keyof GameFormData, value: string | boolean | Date | null) => void;
+  onFieldChange: (field: keyof GameFormData, value: string | boolean | Date | null | string[]) => void;
   disabled?: boolean;
 }
 
 const GameFormFields = ({ formData, onFieldChange, disabled }: GameFormFieldsProps) => {
+  const [newTag, setNewTag] = useState('');
+
+  const addTag = () => {
+    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+      onFieldChange('tags', [...formData.tags, newTag.trim()]);
+      setNewTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    onFieldChange('tags', formData.tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag();
+    }
+  };
   return (
     <>
       <div className="space-y-2">
@@ -110,6 +132,50 @@ const GameFormFields = ({ formData, onFieldChange, disabled }: GameFormFieldsPro
               disabled={disabled}
             />
           </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Tags</Label>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Add a tag (e.g., Premier League, Football)"
+              disabled={disabled}
+              className="flex-1"
+            />
+            <Button 
+              type="button" 
+              onClick={addTag} 
+              size="sm" 
+              variant="outline"
+              disabled={disabled || !newTag.trim()}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          {formData.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {formData.tags.map((tag, index) => (
+                <Badge key={index} variant="secondary" className="px-2 py-1">
+                  {tag}
+                  {!disabled && (
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="ml-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

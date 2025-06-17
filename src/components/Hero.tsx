@@ -13,6 +13,7 @@ interface FeaturedGame {
   featured: boolean;
   game_date?: string | null;
   game_time?: string | null;
+  tags?: string[] | null;
   created_at: string;
 }
 
@@ -87,19 +88,36 @@ const Hero = ({ featuredGame }: HeroProps) => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8 animate-fade-in">
             {/* Live Status */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 flex-wrap gap-y-2">
               <Badge variant={liveStatus.variant} className={liveStatus.className}>
                 {isGameLive(featuredGame) && (
                   <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
                 )}
                 {liveStatus.text}
               </Badge>
-              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 px-3 py-1">
-                Premier League
-              </Badge>
-              <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground px-3 py-1">
-                HD Quality
-              </Badge>
+              
+              {/* Display tags for Coming Up games */}
+              {!isGameLive(featuredGame) && featuredGame?.tags && featuredGame.tags.length > 0 && (
+                <>
+                  {featuredGame.tags.map((tag, index) => (
+                    <Badge key={index} variant="outline" className="border-primary/30 text-primary bg-primary/10 px-3 py-1">
+                      {tag}
+                    </Badge>
+                  ))}
+                </>
+              )}
+              
+              {/* Default badges when live or no tags */}
+              {(isGameLive(featuredGame) || !featuredGame?.tags?.length) && (
+                <>
+                  <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 px-3 py-1">
+                    Premier League
+                  </Badge>
+                  <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground px-3 py-1">
+                    HD Quality
+                  </Badge>
+                </>
+              )}
             </div>
             
             {/* Main Heading */}

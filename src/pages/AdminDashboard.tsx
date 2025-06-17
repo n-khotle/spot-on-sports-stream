@@ -20,6 +20,7 @@ interface Game {
   featured: boolean;
   game_date?: string | null;
   game_time?: string | null;
+  tags?: string[] | null;
   created_at: string;
 }
 

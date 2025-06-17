@@ -19,6 +19,7 @@ export type Database = {
           game_time: string | null
           id: string
           status: string
+          tags: string[] | null
           title: string
           trailer_video_url: string | null
           updated_at: string
@@ -32,6 +33,7 @@ export type Database = {
           game_time?: string | null
           id?: string
           status?: string
+          tags?: string[] | null
           title: string
           trailer_video_url?: string | null
           updated_at?: string
@@ -45,6 +47,7 @@ export type Database = {
           game_time?: string | null
           id?: string
           status?: string
+          tags?: string[] | null
           title?: string
           trailer_video_url?: string | null
           updated_at?: string
