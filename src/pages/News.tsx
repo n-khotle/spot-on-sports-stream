@@ -67,15 +67,15 @@ const News = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl lg:text-6xl font-bold mb-4">
+      <main className="container mx-auto px-4 py-12 lg:py-20">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
             <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
               Latest News
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Stay updated with the latest sports news, match analysis, and exclusive content.
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            Stay updated with the latest sports news, match analysis, and exclusive content from our team.
           </p>
         </div>
 
@@ -89,8 +89,8 @@ const News = () => {
               </Badge>
             </div>
             
-            <Card className="overflow-hidden border-border/50 shadow-lg">
-              <div className="grid lg:grid-cols-2 gap-0">
+            <Card className="overflow-hidden border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
+              <div className="grid lg:grid-cols-2 gap-0 min-h-[400px]">
                 <div className="relative aspect-video lg:aspect-auto">
                   {featuredArticle.video_url ? (
                     <div className="relative w-full h-full bg-secondary">
@@ -98,14 +98,16 @@ const News = () => {
                         src={featuredArticle.video_url}
                         poster={featuredArticle.featured_image_url || undefined}
                         controls
+                        preload="metadata"
                         className="w-full h-full object-cover"
+                        style={{ minHeight: '300px' }}
                       >
                         Your browser does not support the video tag.
                       </video>
-                      <div className="absolute top-4 left-4">
-                        <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
-                          <Play className="w-3 h-3 mr-1" />
-                          Video
+                      <div className="absolute top-4 left-4 z-10">
+                        <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm shadow-sm">
+                          <Play className="w-4 h-4 mr-2" />
+                          Featured Video
                         </Badge>
                       </div>
                     </div>
@@ -169,24 +171,36 @@ const News = () => {
           <div className="space-y-8">
             <h2 className="text-2xl font-bold">All Stories</h2>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {articles.map((article) => (
-                <Card key={article.id} className="group hover:shadow-lg transition-all duration-300 border-border/50 overflow-hidden">
-                  <div className="aspect-video relative overflow-hidden">
+                <Card key={article.id} className="group hover:shadow-xl transition-all duration-300 border-border/50 overflow-hidden bg-card/50 backdrop-blur-sm hover:bg-card/80">
+                  <div className="aspect-video relative overflow-hidden rounded-t-lg">
                     {article.video_url ? (
-                      <div className="relative w-full h-full bg-secondary">
+                      <div className="relative w-full h-full bg-secondary group cursor-pointer">
                         <video
                           src={article.video_url}
                           poster={article.featured_image_url || undefined}
+                          controls
+                          preload="metadata"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onLoadStart={(e) => {
+                            const video = e.target as HTMLVideoElement;
+                            video.currentTime = 1; // Show a frame from the video
+                          }}
                         >
                           Your browser does not support the video tag.
                         </video>
-                        <div className="absolute top-2 left-2">
-                          <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm text-xs">
+                        <div className="absolute top-3 left-3 z-10">
+                          <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm text-xs shadow-sm">
                             <Play className="w-3 h-3 mr-1" />
                             Video
                           </Badge>
+                        </div>
+                        {/* Play button overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                          <div className="w-16 h-16 bg-background/90 rounded-full flex items-center justify-center shadow-lg">
+                            <Play className="w-6 h-6 text-foreground ml-1" />
+                          </div>
                         </div>
                       </div>
                     ) : article.featured_image_url ? (
