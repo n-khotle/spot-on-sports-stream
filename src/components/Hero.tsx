@@ -224,23 +224,6 @@ const Hero = ({ featuredGame }: HeroProps) => {
                 >
                   Your browser does not support the video tag.
                 </video>
-                
-                {/* Video Info Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background/95 to-transparent pointer-events-none">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-lg text-foreground">
-                        {featuredGame.title} - Trailer
-                      </h3>
-                      <p className="text-muted-foreground text-sm">
-                        Watch the official game trailer
-                      </p>
-                    </div>
-                    <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-500 animate-pulse">
-                      FEATURED
-                    </Badge>
-                  </div>
-                </div>
               </div>
             ) : (
               <div className="aspect-video bg-gradient-to-br from-secondary to-secondary/50 rounded-2xl overflow-hidden relative group cursor-pointer border border-border/50 shadow-2xl">
@@ -264,25 +247,6 @@ const Hero = ({ featuredGame }: HeroProps) => {
                     {/* Ripple Effect */}
                     <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping"></div>
                     <div className="absolute inset-0 rounded-full border border-primary/20 animate-pulse"></div>
-                  </div>
-                </div>
-                
-                {/* Video Info Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background/95 to-transparent">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-lg text-foreground">
-                        {featuredGame ? featuredGame.title : "Game Preview"}
-                      </h3>
-                      <p className="text-muted-foreground text-sm">
-                        {featuredGame ? "Featured game content" : "Browse our game library"}
-                      </p>
-                    </div>
-                    {featuredGame && (
-                      <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-500 animate-pulse">
-                        FEATURED
-                      </Badge>
-                    )}
                   </div>
                 </div>
               </div>
