@@ -15,6 +15,8 @@ export type Database = {
           description: string | null
           featured: boolean
           featured_image_url: string | null
+          game_date: string | null
+          game_time: string | null
           id: string
           status: string
           title: string
@@ -26,6 +28,8 @@ export type Database = {
           description?: string | null
           featured?: boolean
           featured_image_url?: string | null
+          game_date?: string | null
+          game_time?: string | null
           id?: string
           status?: string
           title: string
@@ -37,6 +41,8 @@ export type Database = {
           description?: string | null
           featured?: boolean
           featured_image_url?: string | null
+          game_date?: string | null
+          game_time?: string | null
           id?: string
           status?: string
           title?: string

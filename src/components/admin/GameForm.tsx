@@ -16,6 +16,8 @@ interface Game {
   trailer_video_url: string | null;
   status: string;
   featured: boolean;
+  game_date?: string | null;
+  game_time?: string | null;
   created_at: string;
 }
 
@@ -33,10 +35,12 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
     featured_image_url: editingGame?.featured_image_url || '',
     trailer_video_url: editingGame?.trailer_video_url || '',
     status: editingGame?.status || 'draft',
-    featured: editingGame?.featured || false
+    featured: editingGame?.featured || false,
+    game_date: editingGame?.game_date ? new Date(editingGame.game_date) : null,
+    game_time: editingGame?.game_time || ''
   });
 
-  const handleFieldChange = (field: string, value: string | boolean) => {
+  const handleFieldChange = (field: string, value: string | boolean | Date | null) => {
     setFormData({ ...formData, [field]: value });
   };
 
@@ -50,11 +54,17 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
 
   const handleSaveGame = async () => {
     try {
+      // Prepare data for database with proper date formatting
+      const dbData = {
+        ...formData,
+        game_date: formData.game_date ? formData.game_date.toISOString().split('T')[0] : null,
+      };
+
       if (editingGame) {
         // Update existing game
         const { error } = await supabase
           .from('games')
-          .update(formData)
+          .update(dbData)
           .eq('id', editingGame.id);
 
         if (error) throw error;
@@ -63,7 +73,7 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
         // Create new game
         const { error } = await supabase
           .from('games')
-          .insert([formData]);
+          .insert([dbData]);
 
         if (error) throw error;
         toast({ title: "Success", description: "Game created successfully!" });
@@ -87,7 +97,9 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
       featured_image_url: '', 
       trailer_video_url: '', 
       status: 'draft', 
-      featured: false 
+      featured: false,
+      game_date: null,
+      game_time: ''
     });
   };
 
@@ -113,7 +125,9 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
             title: formData.title,
             description: formData.description,
             status: formData.status,
-            featured: formData.featured
+            featured: formData.featured,
+            game_date: formData.game_date,
+            game_time: formData.game_time
           }}
           onFieldChange={handleFieldChange}
         />
