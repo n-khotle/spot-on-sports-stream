@@ -41,16 +41,16 @@ const AdminDashboard = () => {
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [editingPage, setEditingPage] = useState<Page | null>(null);
 
-  // Redirect if not admin
-  if (!loading && (!user || !isAdmin)) {
-    return <Navigate to="/auth" replace />;
-  }
-
   useEffect(() => {
     if (isAdmin) {
       fetchGames();
     }
   }, [isAdmin]);
+
+  // Redirect if not admin - moved AFTER all hooks
+  if (!loading && (!user || !isAdmin)) {
+    return <Navigate to="/auth" replace />;
+  }
 
   const fetchGames = async () => {
     try {
