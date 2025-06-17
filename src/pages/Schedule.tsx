@@ -157,7 +157,7 @@ const Schedule = () => {
                     onClick={() => handleWatchClick(game)}
                   >
                     <Play className="w-4 h-4 mr-2" />
-                    {game.featured ? "Watch Live - $9.99" : "Watch - $9.99"}
+                    {game.featured ? "Watch Live" : "Watch"}
                   </Button>
                 </CardContent>
               </Card>
