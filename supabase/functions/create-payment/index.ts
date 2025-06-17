@@ -18,7 +18,14 @@ serve(async (req) => {
   );
 
   try {
-    const { gameId, amount = 999 } = await req.json(); // Default $9.99
+    const { gameId, amount = 999, currency = "usd" } = await req.json(); // Default $9.99 USD
+    
+    // Convert amount based on currency
+    let finalAmount = amount;
+    if (currency === "bwp") {
+      // Convert USD to BWP (approximate rate: 1 USD = 13 BWP)
+      finalAmount = Math.round(amount * 13);
+    }
     
     // Handle guest users
     let user = null;
@@ -48,11 +55,11 @@ serve(async (req) => {
       customer_email: customerId ? undefined : userEmail,
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: { name: "Game Access - One-Time Purchase" },
-            unit_amount: amount,
-          },
+        price_data: {
+          currency: currency,
+          product_data: { name: "Game Access - One-Time Purchase" },
+          unit_amount: finalAmount,
+        },
           quantity: 1,
         },
       ],
@@ -72,7 +79,8 @@ serve(async (req) => {
       await supabaseService.from("orders").insert({
         user_id: user.id,
         stripe_session_id: session.id,
-        amount: amount,
+        amount: finalAmount,
+        currency: currency,
         status: "pending",
         game_id: gameId,
         created_at: new Date().toISOString()

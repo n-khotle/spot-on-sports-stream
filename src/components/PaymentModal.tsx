@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Check, Play, CreditCard, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,12 +21,19 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [currency, setCurrency] = useState("usd");
+
+  const getCurrencySymbol = (curr: string) => curr === "bwp" ? "P" : "$";
+  const getOneTimePrice = () => currency === "bwp" ? "130.00" : "9.99";
+  const getBasicPrice = () => currency === "bwp" ? "130.00" : "9.99";
+  const getPremiumPrice = () => currency === "bwp" ? "260.00" : "19.99";
+  const getEnterprisePrice = () => currency === "bwp" ? "650.00" : "49.99";
 
   const handleOneTimePayment = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { gameId, amount: 999 },
+        body: { gameId, amount: 999, currency },
         headers: user ? { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` } : {}
       });
 
@@ -59,7 +67,7 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { tier },
+        body: { tier, currency },
         headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` }
       });
 
@@ -90,6 +98,20 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
           </DialogDescription>
         </DialogHeader>
 
+        {/* Currency Selector */}
+        <div className="flex items-center gap-4 pb-4 border-b">
+          <label className="text-sm font-medium">Currency:</label>
+          <Select value={currency} onValueChange={setCurrency}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="usd">USD ($)</SelectItem>
+              <SelectItem value="bwp">BWP (P)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <Tabs defaultValue="one-time" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="one-time">One-Time Access</TabsTrigger>
@@ -109,7 +131,7 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-primary">$9.99</div>
+                  <div className="text-4xl font-bold text-primary">{getCurrencySymbol(currency)}{getOneTimePrice()}</div>
                   <div className="text-sm text-muted-foreground">One-time payment</div>
                 </div>
                 
@@ -138,7 +160,7 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
                   disabled={loading}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  {loading ? 'Processing...' : 'Buy Now - $9.99'}
+                  {loading ? 'Processing...' : `Buy Now - ${getCurrencySymbol(currency)}${getOneTimePrice()}`}
                 </Button>
               </CardContent>
             </Card>
@@ -163,7 +185,7 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
                 <CardHeader className="text-center">
                   <CardTitle>Basic</CardTitle>
                   <CardDescription>Perfect for casual viewers</CardDescription>
-                  <div className="text-3xl font-bold">$9.99<span className="text-sm font-normal">/month</span></div>
+                  <div className="text-3xl font-bold">{getCurrencySymbol(currency)}{getBasicPrice()}<span className="text-sm font-normal">/month</span></div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -199,7 +221,7 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
                 <CardHeader className="text-center">
                   <CardTitle>Premium</CardTitle>
                   <CardDescription>Best value for regular viewers</CardDescription>
-                  <div className="text-3xl font-bold">$19.99<span className="text-sm font-normal">/month</span></div>
+                  <div className="text-3xl font-bold">{getCurrencySymbol(currency)}{getPremiumPrice()}<span className="text-sm font-normal">/month</span></div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -239,7 +261,7 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
                 <CardHeader className="text-center">
                   <CardTitle>Enterprise</CardTitle>
                   <CardDescription>For sports organizations</CardDescription>
-                  <div className="text-3xl font-bold">$49.99<span className="text-sm font-normal">/month</span></div>
+                  <div className="text-3xl font-bold">{getCurrencySymbol(currency)}{getEnterprisePrice()}<span className="text-sm font-normal">/month</span></div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">

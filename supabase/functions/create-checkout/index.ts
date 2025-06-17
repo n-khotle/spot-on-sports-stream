@@ -18,7 +18,7 @@ serve(async (req) => {
   );
 
   try {
-    const { priceId, tier } = await req.json();
+    const { priceId, tier, currency = "usd" } = await req.json();
     
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
@@ -33,20 +33,22 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    // Define pricing based on tier
+    // Define pricing based on tier and currency
     let unitAmount;
     let productName;
+    const currencyMultiplier = currency === "bwp" ? 13 : 1; // BWP conversion rate
+    
     switch (tier) {
       case 'basic':
-        unitAmount = 999; // $9.99
+        unitAmount = currency === "bwp" ? 13000 : 999; // 130 BWP or $9.99
         productName = "Basic Monthly Subscription";
         break;
       case 'premium':
-        unitAmount = 1999; // $19.99
+        unitAmount = currency === "bwp" ? 26000 : 1999; // 260 BWP or $19.99
         productName = "Premium Monthly Subscription";
         break;
       case 'enterprise':
-        unitAmount = 4999; // $49.99
+        unitAmount = currency === "bwp" ? 65000 : 4999; // 650 BWP or $49.99
         productName = "Enterprise Monthly Subscription";
         break;
       default:
@@ -58,12 +60,12 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: { name: productName },
-            unit_amount: unitAmount,
-            recurring: { interval: "month" },
-          },
+        price_data: {
+          currency: currency,
+          product_data: { name: productName },
+          unit_amount: unitAmount,
+          recurring: { interval: "month" },
+        },
           quantity: 1,
         },
       ],
