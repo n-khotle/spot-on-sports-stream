@@ -7,8 +7,11 @@ interface FeaturedGame {
   title: string;
   description: string | null;
   featured_image_url: string | null;
+  trailer_video_url: string | null;
   status: string;
   featured: boolean;
+  game_date?: string | null;
+  game_time?: string | null;
   created_at: string;
 }
 
@@ -19,14 +22,29 @@ interface HeroProps {
 const Hero = ({ featuredGame }: HeroProps) => {
   return (
     <section className="relative min-h-[80vh] flex items-center overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-secondary">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5"></div>
-        <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      {/* Hero Background Image */}
+      {featuredGame?.featured_image_url && (
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={featuredGame.featured_image_url} 
+            alt={featuredGame.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-background/95"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-background/50"></div>
         </div>
-      </div>
+      )}
+      
+      {/* Fallback Background for games without featured image */}
+      {!featuredGame?.featured_image_url && (
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-secondary">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5"></div>
+          <div className="absolute top-0 left-0 w-full h-full">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -75,16 +93,24 @@ const Hero = ({ featuredGame }: HeroProps) => {
             </div>
             
             {/* Match Details */}
-            <div className="flex items-center space-x-6 text-lg">
-              <div className="flex items-center space-x-2 bg-secondary/50 rounded-full px-4 py-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                <span className="font-semibold">Today</span>
+            {featuredGame && (
+              <div className="flex items-center space-x-6 text-lg">
+                {featuredGame.game_date && (
+                  <div className="flex items-center space-x-2 bg-secondary/50 rounded-full px-4 py-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    <span className="font-semibold">
+                      {new Date(featuredGame.game_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+                {featuredGame.game_time && (
+                  <div className="flex items-center space-x-2 bg-secondary/50 rounded-full px-4 py-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    <span className="font-semibold">{featuredGame.game_time}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center space-x-2 bg-secondary/50 rounded-full px-4 py-2">
-                <Clock className="w-5 h-5 text-primary" />
-                <span className="font-semibold">3:00 PM EST</span>
-              </div>
-            </div>
+            )}
             
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -122,51 +148,82 @@ const Hero = ({ featuredGame }: HeroProps) => {
             </div>
           </div>
           
-          {/* Video Preview */}
+          {/* Video Player */}
           <div className="relative lg:scale-110 animate-fade-in delay-300">
-            <div className="aspect-video bg-gradient-to-br from-secondary to-secondary/50 rounded-2xl overflow-hidden relative group cursor-pointer border border-border/50 shadow-2xl">
-              {/* Featured Game Image or Background Pattern */}
-              {featuredGame?.featured_image_url ? (
-                <img 
-                  src={featuredGame.featured_image_url} 
-                  alt={featuredGame.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent"></div>
-              )}
-              
-              {/* Play Button */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative">
-                  <div className="w-24 h-24 bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg">
-                    <Play className="w-10 h-10 text-primary-foreground fill-current ml-1" />
-                  </div>
-                  {/* Ripple Effect */}
-                  <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping"></div>
-                  <div className="absolute inset-0 rounded-full border border-primary/20 animate-pulse"></div>
-                </div>
-              </div>
-              
-              {/* Video Info Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background/95 to-transparent">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-bold text-lg text-foreground">
-                      {featuredGame ? featuredGame.title : "Game Preview"}
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      {featuredGame ? "Featured game content" : "Browse our game library"}
-                    </p>
-                  </div>
-                  {featuredGame && (
+            {featuredGame?.trailer_video_url ? (
+              <div className="aspect-video bg-secondary/50 rounded-2xl overflow-hidden relative group border border-border/50 shadow-2xl">
+                <video 
+                  src={featuredGame.trailer_video_url}
+                  poster={featuredGame.featured_image_url || undefined}
+                  controls
+                  className="w-full h-full object-cover"
+                  preload="metadata"
+                >
+                  Your browser does not support the video tag.
+                </video>
+                
+                {/* Video Info Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background/95 to-transparent pointer-events-none">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-bold text-lg text-foreground">
+                        {featuredGame.title} - Trailer
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        Watch the official game trailer
+                      </p>
+                    </div>
                     <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-500 animate-pulse">
                       FEATURED
                     </Badge>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="aspect-video bg-gradient-to-br from-secondary to-secondary/50 rounded-2xl overflow-hidden relative group cursor-pointer border border-border/50 shadow-2xl">
+                {/* Featured Game Image or Background Pattern */}
+                {featuredGame?.featured_image_url ? (
+                  <img 
+                    src={featuredGame.featured_image_url} 
+                    alt={featuredGame.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent"></div>
+                )}
+                
+                {/* Play Button */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg">
+                      <Play className="w-10 h-10 text-primary-foreground fill-current ml-1" />
+                    </div>
+                    {/* Ripple Effect */}
+                    <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping"></div>
+                    <div className="absolute inset-0 rounded-full border border-primary/20 animate-pulse"></div>
+                  </div>
+                </div>
+                
+                {/* Video Info Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background/95 to-transparent">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-bold text-lg text-foreground">
+                        {featuredGame ? featuredGame.title : "Game Preview"}
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        {featuredGame ? "Featured game content" : "Browse our game library"}
+                      </p>
+                    </div>
+                    {featuredGame && (
+                      <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-500 animate-pulse">
+                        FEATURED
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Floating Elements */}
             <div className="absolute -top-4 -right-4 bg-primary/10 backdrop-blur-sm rounded-full p-3 border border-primary/20">
