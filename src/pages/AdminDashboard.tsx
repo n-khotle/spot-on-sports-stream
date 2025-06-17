@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, Save, Star } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import GameForm from '@/components/admin/GameForm';
+import GamesTable from '@/components/admin/GamesTable';
 
 interface Game {
   id: string;
@@ -30,13 +24,6 @@ const AdminDashboard = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    featured_image_url: '',
-    status: 'draft',
-    featured: false
-  });
 
   // Redirect if not admin
   if (!loading && (!user || !isAdmin)) {
@@ -69,97 +56,17 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleSaveGame = async () => {
-    try {
-      if (editingGame) {
-        // Update existing game
-        const { error } = await supabase
-          .from('games')
-          .update(formData)
-          .eq('id', editingGame.id);
-
-        if (error) throw error;
-        toast({ title: "Success", description: "Game updated successfully!" });
-      } else {
-        // Create new game
-        const { error } = await supabase
-          .from('games')
-          .insert([formData]);
-
-        if (error) throw error;
-        toast({ title: "Success", description: "Game created successfully!" });
-      }
-
-      setEditingGame(null);
-      setFormData({ title: '', description: '', featured_image_url: '', status: 'draft', featured: false });
-      fetchGames();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleEditGame = (game: Game) => {
     setEditingGame(game);
-    setFormData({
-      title: game.title,
-      description: game.description || '',
-      featured_image_url: game.featured_image_url || '',
-      status: game.status,
-      featured: game.featured
-    });
   };
 
-  const handleDeleteGame = async (gameId: string) => {
-    if (!confirm('Are you sure you want to delete this game?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('games')
-        .delete()
-        .eq('id', gameId);
-
-      if (error) throw error;
-      toast({ title: "Success", description: "Game deleted successfully!" });
-      fetchGames();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const resetForm = () => {
+  const handleGameSaved = () => {
     setEditingGame(null);
-    setFormData({ title: '', description: '', featured_image_url: '', status: 'draft', featured: false });
+    fetchGames();
   };
 
-  const handleToggleFeatured = async (gameId: string, currentFeatured: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('games')
-        .update({ featured: !currentFeatured })
-        .eq('id', gameId);
-
-      if (error) throw error;
-      
-      toast({ 
-        title: "Success", 
-        description: `Game ${!currentFeatured ? 'featured' : 'unfeatured'} successfully!` 
-      });
-      fetchGames();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+  const handleCancel = () => {
+    setEditingGame(null);
   };
 
   if (loading || isLoading) {
@@ -188,160 +95,16 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Game Form */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Plus className="w-5 h-5 mr-2" />
-                {editingGame ? 'Edit Game' : 'Add New Game'}
-              </CardTitle>
-              <CardDescription>
-                {editingGame ? 'Update game information' : 'Create a new game entry'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Game title"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Game description"
-                  rows={3}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="featured_image_url">Featured Image URL</Label>
-                <Input
-                  id="featured_image_url"
-                  value={formData.featured_image_url}
-                  onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="featured"
-                  checked={formData.featured}
-                  onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
-                />
-                <Label htmlFor="featured">Featured Game</Label>
-              </div>
-              
-              <div className="flex space-x-2">
-                <Button onClick={handleSaveGame} className="flex-1">
-                  <Save className="w-4 h-4 mr-2" />
-                  {editingGame ? 'Update' : 'Create'}
-                </Button>
-                {editingGame && (
-                  <Button onClick={resetForm} variant="outline">
-                    Cancel
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Games List */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Games ({games.length})</CardTitle>
-              <CardDescription>Manage your game content</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Featured</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {games.map((game) => (
-                    <TableRow key={game.id}>
-                      <TableCell className="font-medium">{game.title}</TableCell>
-                      <TableCell>
-                        <Badge variant={game.status === 'published' ? 'default' : 'secondary'}>
-                          {game.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          {game.featured && (
-                            <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                          )}
-                          <Button
-                            onClick={() => handleToggleFeatured(game.id, game.featured)}
-                            size="sm"
-                            variant={game.featured ? "default" : "outline"}
-                            className="h-6 text-xs"
-                          >
-                            {game.featured ? 'Featured' : 'Feature'}
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(game.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            onClick={() => handleEditGame(game)}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            onClick={() => handleDeleteGame(game.id)}
-                            size="sm"
-                            variant="destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {games.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        No games created yet. Add your first game!
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <GameForm 
+            editingGame={editingGame} 
+            onGameSaved={handleGameSaved}
+            onCancel={handleCancel}
+          />
+          <GamesTable 
+            games={games} 
+            onEditGame={handleEditGame}
+            onGamesUpdated={fetchGames}
+          />
         </div>
       </div>
     </div>
