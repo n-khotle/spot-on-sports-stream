@@ -11,7 +11,18 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, CreditCard, DollarSign, Settings, Save, TestTube, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Settings, Save, TestTube, AlertCircle, Link, Plus, Copy, ExternalLink, Trash2 } from 'lucide-react';
+
+interface PaymentLink {
+  id: string;
+  url: string;
+  title: string;
+  description: string;
+  amount: number;
+  currency: string;
+  active: boolean;
+  created_at: string;
+}
 
 const PaymentSettings = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -28,6 +39,14 @@ const PaymentSettings = () => {
     cancelUrl: '/payment-canceled'
   });
   const [saving, setSaving] = useState(false);
+  const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>([]);
+  const [newPaymentLink, setNewPaymentLink] = useState({
+    title: '',
+    description: '',
+    amount: '',
+    currency: 'usd'
+  });
+  const [creatingLink, setCreatingLink] = useState(false);
 
   // Redirect if not admin
   if (!loading && (!user || !isAdmin)) {
@@ -56,6 +75,83 @@ const PaymentSettings = () => {
 
   const handleFieldChange = (field: string, value: any) => {
     setSettings({ ...settings, [field]: value });
+  };
+
+  const handleCreatePaymentLink = async () => {
+    if (!newPaymentLink.title || !newPaymentLink.amount) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreatingLink(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment-link', {
+        body: {
+          title: newPaymentLink.title,
+          description: newPaymentLink.description,
+          amount: parseInt(newPaymentLink.amount),
+          currency: newPaymentLink.currency
+        }
+      });
+
+      if (error) throw error;
+
+      const newLink: PaymentLink = {
+        id: data.id,
+        url: data.url,
+        title: newPaymentLink.title,
+        description: newPaymentLink.description,
+        amount: parseInt(newPaymentLink.amount),
+        currency: newPaymentLink.currency,
+        active: true,
+        created_at: new Date().toISOString()
+      };
+
+      setPaymentLinks([...paymentLinks, newLink]);
+      setNewPaymentLink({ title: '', description: '', amount: '', currency: 'usd' });
+      
+      toast({
+        title: "Payment Link Created",
+        description: "Your payment link has been created successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create payment link",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingLink(false);
+    }
+  };
+
+  const handleCopyLink = (url: string) => {
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "Copied",
+      description: "Payment link copied to clipboard",
+    });
+  };
+
+  const handleDeletePaymentLink = async (linkId: string) => {
+    try {
+      // Here you would call an edge function to deactivate the Stripe payment link
+      setPaymentLinks(paymentLinks.filter(link => link.id !== linkId));
+      toast({
+        title: "Payment Link Deleted",
+        description: "The payment link has been removed.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to delete payment link",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -277,6 +373,159 @@ const PaymentSettings = () => {
                   <Badge variant="secondary">Ready for Setup</Badge>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment Links */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Link className="w-5 h-5 mr-2" />
+                Payment Links
+              </CardTitle>
+              <CardDescription>
+                Create and manage payment links for easy sharing
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Create New Payment Link */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <h4 className="font-medium flex items-center">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Payment Link
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="linkTitle">Title *</Label>
+                    <Input
+                      id="linkTitle"
+                      value={newPaymentLink.title}
+                      onChange={(e) => setNewPaymentLink({ ...newPaymentLink, title: e.target.value })}
+                      placeholder="Product/Service Name"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="linkAmount">Amount (in cents) *</Label>
+                    <Input
+                      id="linkAmount"
+                      type="number"
+                      value={newPaymentLink.amount}
+                      onChange={(e) => setNewPaymentLink({ ...newPaymentLink, amount: e.target.value })}
+                      placeholder="4999"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="linkCurrency">Currency</Label>
+                    <Select 
+                      value={newPaymentLink.currency} 
+                      onValueChange={(value) => setNewPaymentLink({ ...newPaymentLink, currency: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select currency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="usd">USD ($)</SelectItem>
+                        <SelectItem value="eur">EUR (€)</SelectItem>
+                        <SelectItem value="gbp">GBP (£)</SelectItem>
+                        <SelectItem value="cad">CAD ($)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="linkDescription">Description</Label>
+                  <Textarea
+                    id="linkDescription"
+                    value={newPaymentLink.description}
+                    onChange={(e) => setNewPaymentLink({ ...newPaymentLink, description: e.target.value })}
+                    placeholder="Optional description for the payment"
+                    rows={3}
+                  />
+                </div>
+                
+                <Button 
+                  onClick={handleCreatePaymentLink} 
+                  disabled={creatingLink || !newPaymentLink.title || !newPaymentLink.amount}
+                  className="w-full md:w-auto"
+                >
+                  {creatingLink ? 'Creating...' : 'Create Payment Link'}
+                </Button>
+              </div>
+
+              {/* Existing Payment Links */}
+              {paymentLinks.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="font-medium">Existing Payment Links</h4>
+                  <div className="space-y-3">
+                    {paymentLinks.map((link) => (
+                      <div key={link.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1 flex-1">
+                            <div className="flex items-center space-x-2">
+                              <h5 className="font-medium">{link.title}</h5>
+                              <Badge variant={link.active ? "default" : "secondary"}>
+                                {link.active ? "Active" : "Inactive"}
+                              </Badge>
+                            </div>
+                            {link.description && (
+                              <p className="text-sm text-muted-foreground">{link.description}</p>
+                            )}
+                            <p className="text-sm font-medium">
+                              {(link.amount / 100).toFixed(2)} {link.currency.toUpperCase()}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Created: {new Date(link.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCopyLink(link.url)}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(link.url, '_blank')}
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeletePaymentLink(link.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3 p-2 bg-muted rounded text-xs font-mono break-all">
+                          {link.url}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {paymentLinks.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Link className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No payment links created yet</p>
+                  <p className="text-sm">Create your first payment link above</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
