@@ -18,7 +18,7 @@ serve(async (req) => {
   );
 
   try {
-    const { priceId, tier, currency = "usd" } = await req.json();
+    const { priceId, tier, currency = "bwp" } = await req.json();
     
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
@@ -36,19 +36,18 @@ serve(async (req) => {
     // Define pricing based on tier and currency
     let unitAmount;
     let productName;
-    const currencyMultiplier = currency === "bwp" ? 13 : 1; // BWP conversion rate
     
     switch (tier) {
       case 'basic':
-        unitAmount = currency === "bwp" ? 13000 : 999; // 130 BWP or $9.99
+        unitAmount = currency === "bwp" ? 1500 : 115; // P15.00 BWP or $1.15 USD
         productName = "Basic Monthly Subscription";
         break;
       case 'premium':
-        unitAmount = currency === "bwp" ? 26000 : 1999; // 260 BWP or $19.99
+        unitAmount = currency === "bwp" ? 3000 : 230; // P30.00 BWP or $2.30 USD
         productName = "Premium Monthly Subscription";
         break;
       case 'enterprise':
-        unitAmount = currency === "bwp" ? 65000 : 4999; // 650 BWP or $49.99
+        unitAmount = currency === "bwp" ? 7500 : 575; // P75.00 BWP or $5.75 USD
         productName = "Enterprise Monthly Subscription";
         break;
       default:

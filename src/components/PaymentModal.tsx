@@ -24,16 +24,16 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
   const [currency, setCurrency] = useState("bwp");
 
   const getCurrencySymbol = (curr: string) => curr === "bwp" ? "P" : "$";
-  const getOneTimePrice = () => currency === "bwp" ? "130.00" : "9.99";
-  const getBasicPrice = () => currency === "bwp" ? "130.00" : "9.99";
-  const getPremiumPrice = () => currency === "bwp" ? "260.00" : "19.99";
-  const getEnterprisePrice = () => currency === "bwp" ? "650.00" : "49.99";
+  const getOneTimePrice = () => currency === "bwp" ? "15.00" : "1.15";
+  const getBasicPrice = () => currency === "bwp" ? "15.00" : "1.15";
+  const getPremiumPrice = () => currency === "bwp" ? "30.00" : "2.30";
+  const getEnterprisePrice = () => currency === "bwp" ? "75.00" : "5.75";
 
   const handleOneTimePayment = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { gameId, amount: 999, currency },
+        body: { gameId, amount: currency === "bwp" ? 1500 : 115, currency },
         headers: user ? { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` } : {}
       });
 

@@ -18,13 +18,13 @@ serve(async (req) => {
   );
 
   try {
-    const { gameId, amount = 999, currency = "usd" } = await req.json(); // Default $9.99 USD
+    const { gameId, amount = 1500, currency = "bwp" } = await req.json(); // Default P15.00 BWP
     
-    // Convert amount based on currency
+    // Use the amount directly since it's already in the correct currency
     let finalAmount = amount;
-    if (currency === "bwp") {
-      // Convert USD to BWP (approximate rate: 1 USD = 13 BWP)
-      finalAmount = Math.round(amount * 13);
+    if (currency === "usd" && amount === 1500) {
+      // Convert BWP 15 to USD (BWP 15 ≈ $1.15)
+      finalAmount = 115; // $1.15 in cents
     }
     
     // Handle guest users
