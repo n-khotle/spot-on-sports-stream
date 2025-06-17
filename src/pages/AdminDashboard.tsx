@@ -9,6 +9,8 @@ import { LogOut, CreditCard } from 'lucide-react';
 import GameForm from '@/components/admin/GameForm';
 import GamesTable from '@/components/admin/GamesTable';
 import NewsTable from '@/components/admin/NewsTable';
+import PageForm from '@/components/admin/PageForm';
+import PagesTable from '@/components/admin/PagesTable';
 
 interface Game {
   id: string;
@@ -24,12 +26,20 @@ interface Game {
   created_at: string;
 }
 
+interface Page {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;
+}
+
 const AdminDashboard = () => {
   const { user, isAdmin, signOut, loading } = useAuth();
   const { toast } = useToast();
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
+  const [editingPage, setEditingPage] = useState<Page | null>(null);
 
   // Redirect if not admin
   if (!loading && (!user || !isAdmin)) {
@@ -75,6 +85,18 @@ const AdminDashboard = () => {
     setEditingGame(null);
   };
 
+  const handleEditPage = (page: Page) => {
+    setEditingPage(page);
+  };
+
+  const handlePageSaved = () => {
+    setEditingPage(null);
+  };
+
+  const handlePageCancel = () => {
+    setEditingPage(null);
+  };
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -111,9 +133,10 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="games" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg">
             <TabsTrigger value="games">Games Management</TabsTrigger>
             <TabsTrigger value="news">News Management</TabsTrigger>
+            <TabsTrigger value="pages">Pages Management</TabsTrigger>
           </TabsList>
           
           <TabsContent value="games" className="space-y-8">
@@ -133,6 +156,19 @@ const AdminDashboard = () => {
           
           <TabsContent value="news" className="space-y-8">
             <NewsTable />
+          </TabsContent>
+          
+          <TabsContent value="pages" className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <PageForm 
+                editingPage={editingPage} 
+                onPageSaved={handlePageSaved}
+                onCancel={handlePageCancel}
+              />
+              <PagesTable 
+                onEditPage={handleEditPage}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>

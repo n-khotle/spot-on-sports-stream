@@ -10,6 +10,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import PaymentSettings from "./pages/PaymentSettings";
 import Schedule from "./pages/Schedule";
 import News from "./pages/News";
+import AboutUs from "./pages/AboutUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +29,9 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/news" element={<News />} />
+            <Route path="/about-us" element={<AboutUs />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/payment-settings" element={<PaymentSettings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
