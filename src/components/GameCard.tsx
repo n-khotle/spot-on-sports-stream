@@ -1,8 +1,12 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Play, Calendar, Clock, Users } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
+import PaymentModal from "./PaymentModal";
 
 interface GameCardProps {
   homeTeam: string;
@@ -16,13 +20,20 @@ interface GameCardProps {
 }
 
 const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewers }: GameCardProps) => {
-  const { toast } = useToast();
+  const { user } = useAuth();
+  const { subscribed } = useSubscription();
+  const navigate = useNavigate();
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const handleBuyNow = () => {
-    toast({
-      title: "Payment Required",
-      description: `Redirecting to payment gateway for ${homeTeam} vs ${awayTeam} - ${price}`,
-    });
+    // If user is logged in and has active subscription, go to Live page
+    if (user && subscribed) {
+      navigate('/live');
+      return;
+    }
+
+    // Otherwise, show payment modal
+    setPaymentModalOpen(true);
   };
 
   const getStatusBadge = () => {
@@ -98,6 +109,13 @@ const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewe
             </Button>
           </div>
         </div>
+        
+        <PaymentModal 
+          open={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+          gameTitle={`${homeTeam} vs ${awayTeam}`}
+          gameId={homeTeam} // You might want to pass a proper game ID here
+        />
       </CardContent>
     </Card>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -7,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Play } from "lucide-react";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
+import PaymentModal from "@/components/PaymentModal";
 
 interface Game {
   id: string;
@@ -22,8 +26,13 @@ interface Game {
 }
 
 const Schedule = () => {
+  const { user } = useAuth();
+  const { subscribed } = useSubscription();
+  const navigate = useNavigate();
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
   useEffect(() => {
     fetchScheduledGames();
@@ -39,6 +48,18 @@ const Schedule = () => {
     
     setGames(data || []);
     setLoading(false);
+  };
+
+  const handleWatchClick = (game: Game) => {
+    // If user is logged in and has active subscription, go to Live page
+    if (user && subscribed) {
+      navigate('/live');
+      return;
+    }
+
+    // Otherwise, show payment modal
+    setSelectedGame(game);
+    setPaymentModalOpen(true);
   };
 
   if (loading) {
@@ -131,7 +152,10 @@ const Schedule = () => {
                   </div>
 
                   {/* Action Button */}
-                  <Button className="w-full group-hover:bg-primary/90 transition-colors">
+                  <Button 
+                    className="w-full group-hover:bg-primary/90 transition-colors"
+                    onClick={() => handleWatchClick(game)}
+                  >
                     <Play className="w-4 h-4 mr-2" />
                     {game.featured ? "Watch Live - $9.99" : "Watch - $9.99"}
                   </Button>
@@ -141,6 +165,13 @@ const Schedule = () => {
           </div>
         )}
       </main>
+
+      <PaymentModal 
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        gameTitle={selectedGame?.title}
+        gameId={selectedGame?.id}
+      />
 
       <Footer />
     </div>

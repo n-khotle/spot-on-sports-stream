@@ -1,7 +1,12 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Calendar, Clock } from "lucide-react";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
+import PaymentModal from "./PaymentModal";
 
 interface FeaturedGame {
   id: string;
@@ -22,6 +27,10 @@ interface HeroProps {
 }
 
 const Hero = ({ featuredGame }: HeroProps) => {
+  const { user } = useAuth();
+  const { subscribed } = useSubscription();
+  const navigate = useNavigate();
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   // Function to check if a game is currently live
   const isGameLive = (game: FeaturedGame | null) => {
     if (!game?.game_date || !game?.game_time) return false;
@@ -55,6 +64,17 @@ const Hero = ({ featuredGame }: HeroProps) => {
       variant: "outline" as const,
       className: "border-primary/30 text-primary bg-primary/10 px-4 py-2 text-sm font-semibold"
     };
+  };
+
+  const handleWatchClick = () => {
+    // If user is logged in and has active subscription, go to Live page
+    if (user && subscribed) {
+      navigate('/live');
+      return;
+    }
+
+    // Otherwise, show payment modal
+    setPaymentModalOpen(true);
   };
 
   const liveStatus = getLiveStatus();
@@ -175,7 +195,11 @@ const Hero = ({ featuredGame }: HeroProps) => {
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               {featuredGame ? (
                 <>
-                  <Button size="lg" className="text-lg px-10 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 group">
+                  <Button 
+                    size="lg" 
+                    className="text-lg px-10 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 group"
+                    onClick={handleWatchClick}
+                  >
                     <Play className="w-6 h-6 mr-3 fill-current group-hover:scale-110 transition-transform" />
                     {isGameLive(featuredGame) ? "Watch Live - $9.99" : "Watch Preview - $9.99"}
                   </Button>
@@ -261,6 +285,13 @@ const Hero = ({ featuredGame }: HeroProps) => {
             </div>
           </div>
         </div>
+
+        <PaymentModal 
+          open={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+          gameTitle={featuredGame?.title}
+          gameId={featuredGame?.id}
+        />
       </div>
     </section>
   );
