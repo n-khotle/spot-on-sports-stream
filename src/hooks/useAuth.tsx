@@ -14,11 +14,11 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
   isAdmin: boolean;
+  loading: boolean;
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,21 +59,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (!session) setLoading(false);
+      
+      if (session?.user) {
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single()
+          .then(({ data: profileData }) => {
+            setProfile(profileData);
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
-  };
-
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -81,11 +86,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
+        data: fullName ? { full_name: fullName } : undefined
+      }
     });
+    
+    return { error };
+  };
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
     return { error };
   };
 
@@ -95,18 +108,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const isAdmin = profile?.role === 'admin';
 
-  const value = {
-    user,
-    session,
-    profile,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    isAdmin,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{
+      user,
+      session,
+      profile,
+      isAdmin,
+      loading,
+      signUp,
+      signIn,
+      signOut,
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

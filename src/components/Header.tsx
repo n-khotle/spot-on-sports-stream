@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Play, User, Search, Menu, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Play, User, Search, Menu, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const Header = () => {
-  const { user, isAdmin } = useAuth();
-
+  const { user, isAdmin, signOut } = useAuth();
+  
   return (
     <header className="bg-background border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -31,26 +33,37 @@ const Header = () => {
           </Button>
           
           {user ? (
-            <div className="flex items-center space-x-2">
-              {isAdmin && (
-                <Button variant="outline" size="sm" asChild>
-                  <a href="/admin">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Admin
-                  </a>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <User className="w-4 h-4 mr-2" />
+                  {user.email?.split('@')[0]}
                 </Button>
-              )}
-              <Button variant="outline" size="sm">
-                <User className="w-4 h-4 mr-2" />
-                Profile
-              </Button>
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-background border border-border">
+                {isAdmin && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="flex items-center w-full">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Admin Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem onClick={signOut} className="text-destructive">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <Button variant="outline" size="sm" asChild>
-              <a href="/auth">
+              <Link to="/auth">
                 <User className="w-4 h-4 mr-2" />
                 Sign In
-              </a>
+              </Link>
             </Button>
           )}
           
