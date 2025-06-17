@@ -97,7 +97,7 @@ const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewe
           
           <div className="flex flex-col space-y-2">
             <div className="text-center">
-              <span className="text-2xl font-bold text-primary">{price}</span>
+              <span className="text-2xl font-bold text-primary">P15.00</span>
             </div>
             <Button 
               className="w-full" 
