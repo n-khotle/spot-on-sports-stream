@@ -35,9 +35,10 @@ interface PriceData {
 interface SubscriptionProductFormProps {
   product?: SubscriptionProduct | null;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const SubscriptionProductForm = ({ product, onClose }: SubscriptionProductFormProps) => {
+const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionProductFormProps) => {
   const { session } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -164,6 +165,7 @@ const SubscriptionProductForm = ({ product, onClose }: SubscriptionProductFormPr
         description: `Product ${product ? 'updated' : 'created'} successfully`,
       });
 
+      onSuccess?.();
       onClose();
     } catch (error: any) {
       toast({

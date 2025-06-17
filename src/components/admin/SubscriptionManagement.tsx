@@ -18,6 +18,7 @@ interface SubscriptionProduct {
 const SubscriptionManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<SubscriptionProduct | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleEdit = (product: SubscriptionProduct) => {
     setEditingProduct(product);
@@ -27,6 +28,10 @@ const SubscriptionManagement = () => {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingProduct(null);
+  };
+
+  const handleSuccess = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   return (
@@ -50,7 +55,7 @@ const SubscriptionManagement = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <SubscriptionProductTable onEdit={handleEdit} />
+          <SubscriptionProductTable key={refreshKey} onEdit={handleEdit} />
         </CardContent>
       </Card>
 
@@ -58,6 +63,7 @@ const SubscriptionManagement = () => {
         <SubscriptionProductForm
           product={editingProduct}
           onClose={handleCloseForm}
+          onSuccess={handleSuccess}
         />
       )}
     </div>
