@@ -11,8 +11,11 @@ interface Game {
   title: string;
   description: string | null;
   featured_image_url: string | null;
+  trailer_video_url: string | null;
   status: string;
   featured: boolean;
+  game_date?: string | null;
+  game_time?: string | null;
   created_at: string;
 }
 
