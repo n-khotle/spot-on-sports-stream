@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, User, Search, Menu, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Link } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const Header = () => {
   const { user, isAdmin, signOut } = useAuth();
+  const { settings } = useSiteSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   return (
@@ -16,10 +18,18 @@ const Header = () => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Play className="w-4 h-4 text-primary-foreground fill-current" />
-            </div>
-            <span className="text-xl font-bold">Spot On</span>
+            {settings?.logo_url ? (
+              <img 
+                src={settings.logo_url} 
+                alt="Logo"
+                className="w-8 h-8 object-contain"
+              />
+            ) : (
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Play className="w-4 h-4 text-primary-foreground fill-current" />
+              </div>
+            )}
+            <span className="text-xl font-bold">{settings?.site_name || "Sports Streaming"}</span>
           </Link>
           
           <nav className="hidden md:flex items-center space-x-6">
