@@ -20,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import Hls from 'hls.js';
 
 interface VideoPlayerProps {
   src: string;
@@ -32,6 +33,7 @@ interface VideoPlayerProps {
 const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -48,8 +50,61 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
     const video = videoRef.current;
     if (!video) return;
 
+    // Initialize HLS if needed
+    const initializeVideo = () => {
+      if (src.includes('.m3u8')) {
+        // HLS stream
+        if (Hls.isSupported()) {
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: isLive,
+            backBufferLength: isLive ? 5 : 30,
+          });
+          
+          hlsRef.current = hls;
+          hls.loadSource(src);
+          hls.attachMedia(video);
+          
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            console.log('HLS manifest loaded');
+            setIsLoading(false);
+          });
+          
+          hls.on(Hls.Events.ERROR, (event, data) => {
+            console.error('HLS error:', data);
+            if (data.fatal) {
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  console.log('Fatal network error, try to recover');
+                  hls.startLoad();
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  console.log('Fatal media error, try to recover');
+                  hls.recoverMediaError();
+                  break;
+                default:
+                  console.log('Fatal error, cannot recover');
+                  hls.destroy();
+                  break;
+              }
+            }
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // Native HLS support (Safari)
+          video.src = src;
+        } else {
+          console.error('HLS is not supported in this browser');
+        }
+      } else {
+        // Regular video
+        video.src = src;
+      }
+    };
+
     const handleLoadedMetadata = () => {
-      setDuration(video.duration);
+      if (!isLive) {
+        setDuration(video.duration);
+      }
       setIsLoading(false);
     };
 
@@ -64,11 +119,16 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
       setIsMuted(video.muted);
     };
 
+    const handleCanPlay = () => setIsLoading(false);
+
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('volumechange', handleVolumeChange);
+    video.addEventListener('canplay', handleCanPlay);
+
+    initializeVideo();
 
     return () => {
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
@@ -76,8 +136,15 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('volumechange', handleVolumeChange);
+      video.removeEventListener('canplay', handleCanPlay);
+      
+      // Cleanup HLS
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
     };
-  }, []);
+  }, [src, isLive]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -195,7 +262,6 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
       {/* Video Element */}
       <video
         ref={videoRef}
-        src={src}
         poster={poster}
         className="w-full h-full object-cover"
         onClick={handleVideoClick}
@@ -203,6 +269,8 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
         onCanPlay={() => setIsLoading(false)}
         playsInline
         preload="metadata"
+        controls={false}
+        muted={isMuted}
       />
 
       {/* Loading Spinner */}
