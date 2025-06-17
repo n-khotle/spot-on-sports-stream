@@ -13,6 +13,7 @@ interface Game {
   title: string;
   description: string | null;
   featured_image_url: string | null;
+  trailer_video_url: string | null;
   status: string;
   featured: boolean;
   created_at: string;
