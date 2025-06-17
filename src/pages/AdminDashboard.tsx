@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { LogOut } from 'lucide-react';
+import { LogOut, CreditCard } from 'lucide-react';
 import GameForm from '@/components/admin/GameForm';
 import GamesTable from '@/components/admin/GamesTable';
 
@@ -87,10 +87,20 @@ const AdminDashboard = () => {
       <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <Button onClick={signOut} variant="outline" size="sm">
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button 
+              onClick={() => window.location.href = '/admin/payment-settings'} 
+              variant="outline" 
+              size="sm"
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Payment Settings
+            </Button>
+            <Button onClick={signOut} variant="outline" size="sm">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </div>
 
