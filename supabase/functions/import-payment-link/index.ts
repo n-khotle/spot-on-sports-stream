@@ -67,6 +67,8 @@ serve(async (req) => {
 
     // Extract payment link ID from URL
     let paymentLinkId;
+    console.log("Processing URL:", url);
+    
     try {
       if (url.includes('buy.stripe.com')) {
         // Format: https://buy.stripe.com/test_xxxxx or https://buy.stripe.com/xxxxx
@@ -74,6 +76,12 @@ serve(async (req) => {
         paymentLinkId = parts[parts.length - 1];
         // Remove query parameters if any
         paymentLinkId = paymentLinkId.split('?')[0];
+        console.log("Extracted payment link ID:", paymentLinkId);
+        
+        // Check if it's a test payment link
+        const isTestLink = paymentLinkId.startsWith('test_');
+        console.log("Is test payment link:", isTestLink);
+        
       } else if (url.includes('checkout.stripe.com')) {
         // Handle checkout.stripe.com URLs if needed
         throw new Error("Checkout session URLs are not supported for import. Please use payment link URLs from buy.stripe.com");
@@ -83,8 +91,12 @@ serve(async (req) => {
         throw new Error("Could not extract payment link ID from URL");
       }
 
+      console.log("Attempting to retrieve payment link from Stripe...");
+      
       // Retrieve payment link details from Stripe
       const paymentLink = await stripe.paymentLinks.retrieve(paymentLinkId);
+      
+      console.log("Successfully retrieved payment link:", paymentLink.id);
       
       // Get the line item details
       const lineItem = paymentLink.line_items?.data?.[0];
@@ -106,6 +118,17 @@ serve(async (req) => {
       );
     } catch (stripeError) {
       console.error("Stripe API error:", stripeError);
+      
+      // Provide more helpful error messages
+      if (stripeError.message?.includes("No such payment link")) {
+        const isTestId = paymentLinkId?.startsWith('test_');
+        const modeHelp = isTestId 
+          ? "This appears to be a test payment link. Make sure you're using test Stripe keys."
+          : "This appears to be a live payment link. Make sure you're using live Stripe keys.";
+        
+        throw new Error(`Payment link not found. ${modeHelp} Please verify the payment link exists in your Stripe dashboard.`);
+      }
+      
       throw new Error(`Failed to retrieve payment link details: ${stripeError.message}`);
     }
   } catch (error) {
