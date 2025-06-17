@@ -30,8 +30,15 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
+    // Create service role client to check admin status
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
     // Check if user is admin
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await supabaseService
       .from('profiles')
       .select('role')
       .eq('user_id', user.id)
