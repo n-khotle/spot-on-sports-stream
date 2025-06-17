@@ -9,6 +9,7 @@ import PageManagement from '@/components/admin/PageManagement';
 import StreamingManagement from '@/components/admin/StreamingManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import SubscriptionManagement from '@/components/admin/SubscriptionManagement';
+import SiteSettings from '@/components/admin/SiteSettings';
 
 const AdminDashboard = () => {
   const { user, isAdmin, signOut, loading } = useAuth();
@@ -54,13 +55,14 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="games" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-6 max-w-4xl">
+          <TabsList className="grid w-full grid-cols-7 max-w-5xl">
             <TabsTrigger value="games">Games</TabsTrigger>
             <TabsTrigger value="news">News</TabsTrigger>
             <TabsTrigger value="pages">Pages</TabsTrigger>
             <TabsTrigger value="streaming">Streaming</TabsTrigger>
             <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           
           <TabsContent value="games" className="space-y-8">
@@ -85,6 +87,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="users" className="space-y-8">
             <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-8">
+            <SiteSettings />
           </TabsContent>
         </Tabs>
       </div>
