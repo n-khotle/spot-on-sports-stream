@@ -105,7 +105,7 @@ const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewe
               disabled={status === "ended"}
             >
               <Play className="w-4 h-4 mr-2 fill-current" />
-              {status === "live" ? "Watch Live" : status === "upcoming" ? "Buy Access" : "Replay"}
+              {status === "live" ? "Watch Live" : status === "upcoming" ? "Watch Live" : "Replay"}
             </Button>
           </div>
         </div>
