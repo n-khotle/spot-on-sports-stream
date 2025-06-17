@@ -21,7 +21,7 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [currency, setCurrency] = useState("usd");
+  const [currency, setCurrency] = useState("bwp");
 
   const getCurrencySymbol = (curr: string) => curr === "bwp" ? "P" : "$";
   const getOneTimePrice = () => currency === "bwp" ? "130.00" : "9.99";
