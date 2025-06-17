@@ -21,6 +21,42 @@ interface HeroProps {
 }
 
 const Hero = ({ featuredGame }: HeroProps) => {
+  // Function to check if a game is currently live
+  const isGameLive = (game: FeaturedGame | null) => {
+    if (!game?.game_date || !game?.game_time) return false;
+    
+    const now = new Date();
+    const gameDateTime = new Date(`${game.game_date}T${game.game_time}`);
+    const gameEndTime = new Date(gameDateTime.getTime() + 3 * 60 * 60 * 1000); // Assume 3 hours duration
+    
+    return now >= gameDateTime && now <= gameEndTime;
+  };
+
+  const getLiveStatus = () => {
+    if (!featuredGame) {
+      return {
+        text: "COMING SOON",
+        variant: "secondary" as const,
+        className: "bg-gradient-to-r from-secondary to-secondary/80 text-secondary-foreground border-0 px-4 py-2 text-sm font-semibold"
+      };
+    }
+
+    if (isGameLive(featuredGame)) {
+      return {
+        text: "LIVE NOW",
+        variant: "destructive" as const,
+        className: "bg-gradient-to-r from-red-600 to-red-500 text-white border-0 px-4 py-2 text-sm font-semibold"
+      };
+    }
+
+    return {
+      text: "COMING UP",
+      variant: "outline" as const,
+      className: "border-primary/30 text-primary bg-primary/10 px-4 py-2 text-sm font-semibold"
+    };
+  };
+
+  const liveStatus = getLiveStatus();
   return (
     <section className="relative min-h-[80vh] flex items-center overflow-hidden">
       {/* Hero Background Image */}
@@ -52,9 +88,11 @@ const Hero = ({ featuredGame }: HeroProps) => {
           <div className="space-y-8 animate-fade-in">
             {/* Live Status */}
             <div className="flex items-center space-x-3">
-              <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-500 text-white border-0 px-4 py-2 text-sm font-semibold">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
-                LIVE NOW
+              <Badge variant={liveStatus.variant} className={liveStatus.className}>
+                {isGameLive(featuredGame) && (
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
+                )}
+                {liveStatus.text}
               </Badge>
               <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 px-3 py-1">
                 Premier League
@@ -121,7 +159,7 @@ const Hero = ({ featuredGame }: HeroProps) => {
                 <>
                   <Button size="lg" className="text-lg px-10 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 group">
                     <Play className="w-6 h-6 mr-3 fill-current group-hover:scale-110 transition-transform" />
-                    Watch Live - $9.99
+                    {isGameLive(featuredGame) ? "Watch Live - $9.99" : "Watch Preview - $9.99"}
                   </Button>
                   <Button variant="outline" size="lg" className="text-lg px-10 py-4 border-2 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300">
                     Learn More
