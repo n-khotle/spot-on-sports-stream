@@ -12,16 +12,15 @@ const Header = () => {
     <header className="bg-background border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-8">
-          <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Play className="w-4 h-4 text-primary-foreground fill-current" />
             </div>
             <span className="text-xl font-bold">Spot On</span>
-          </div>
+          </Link>
           
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/" className="text-foreground hover:text-primary transition-colors">Live</Link>
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Sports</a>
             <Link to="/schedule" className="text-muted-foreground hover:text-primary transition-colors">Schedule</Link>
             <Link to="/news" className="text-muted-foreground hover:text-primary transition-colors">News</Link>
           </nav>
