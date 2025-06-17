@@ -129,7 +129,9 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
       }
 
       // Handle prices
+      console.log('Processing prices:', prices);
       for (const price of prices) {
+        console.log('Processing price:', price, 'unit_amount:', price.unit_amount, 'parsed:', parseInt(price.unit_amount || '0'));
         if (price.unit_amount && parseInt(price.unit_amount) > 0) {
           const priceData = {
             product_id: productId,
@@ -141,22 +143,36 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
             active: price.active,
           };
 
+          console.log('Saving price data:', priceData);
+
           if (price.id) {
             // Update existing price
+            console.log('Updating existing price with id:', price.id);
             const { error } = await supabase
               .from('subscription_prices')
               .update(priceData)
               .eq('id', price.id);
 
-            if (error) throw error;
+            if (error) {
+              console.error('Error updating price:', error);
+              throw error;
+            }
+            console.log('Price updated successfully');
           } else {
             // Create new price
+            console.log('Creating new price');
             const { error } = await supabase
               .from('subscription_prices')
               .insert(priceData);
 
-            if (error) throw error;
+            if (error) {
+              console.error('Error creating price:', error);
+              throw error;
+            }
+            console.log('Price created successfully');
           }
+        } else {
+          console.log('Skipping price due to invalid unit_amount:', price.unit_amount);
         }
       }
 
