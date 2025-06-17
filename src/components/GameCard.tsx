@@ -17,9 +17,10 @@ interface GameCardProps {
   price: string;
   status: "live" | "upcoming" | "ended";
   viewers?: number;
+  imageUrl?: string;
 }
 
-const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewers }: GameCardProps) => {
+const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewers, imageUrl }: GameCardProps) => {
   const { user } = useAuth();
   const { subscribed } = useSubscription();
   const navigate = useNavigate();
@@ -58,6 +59,13 @@ const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewe
     <Card className="group hover:shadow-xl transition-all duration-300 bg-card border-border">
       <CardContent className="p-0">
         <div className="aspect-video bg-secondary rounded-t-lg relative overflow-hidden">
+          {imageUrl && (
+            <img 
+              src={imageUrl} 
+              alt={`${homeTeam} vs ${awayTeam}`}
+              className="w-full h-full object-cover"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
           <div className="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 flex justify-between items-start">
             {getStatusBadge()}

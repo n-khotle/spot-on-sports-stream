@@ -42,7 +42,8 @@ const FeaturedGames = () => {
     time: game.game_time || "TBD",
     price: "$9.99",
     status: game.featured ? "live" as const : "upcoming" as const,
-    viewers: game.featured ? 45000 : undefined
+    viewers: game.featured ? 45000 : undefined,
+    imageUrl: game.featured_image_url || undefined
   }));
 
   return (
