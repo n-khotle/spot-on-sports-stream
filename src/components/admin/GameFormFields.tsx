@@ -113,7 +113,7 @@ const GameFormFields = ({ formData, onFieldChange, disabled }: GameFormFieldsPro
                 selected={formData.game_date || undefined}
                 onSelect={(date) => onFieldChange('game_date', date || null)}
                 initialFocus
-                className="pointer-events-auto"
+                className={cn("p-3 pointer-events-auto")}
               />
             </PopoverContent>
           </Popover>
