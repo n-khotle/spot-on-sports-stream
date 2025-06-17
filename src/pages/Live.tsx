@@ -75,6 +75,10 @@ const Live = () => {
       const live = gamesData?.filter(game => game.status === 'live') || [];
       const upcoming = gamesData?.filter(game => game.status === 'upcoming') || [];
       
+      console.log('Debug: Live games:', live.length);
+      console.log('Debug: Streaming settings:', streamingData?.length || 0, streamingData);
+      console.log('Debug: Should show live stream?', streamingData && streamingData.length > 0 && live.length === 0);
+      
       setLiveGames(live);
       setUpcomingGames(upcoming);
       setStreamingSettings(streamingData || []);
