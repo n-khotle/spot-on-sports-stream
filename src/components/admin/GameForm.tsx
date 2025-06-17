@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +39,34 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
     game_date: editingGame?.game_date ? new Date(editingGame.game_date) : null,
     game_time: editingGame?.game_time || ''
   });
+
+  // Update form data when editingGame changes
+  useEffect(() => {
+    if (editingGame) {
+      setFormData({
+        title: editingGame.title,
+        description: editingGame.description || '',
+        featured_image_url: editingGame.featured_image_url || '',
+        trailer_video_url: editingGame.trailer_video_url || '',
+        status: editingGame.status,
+        featured: editingGame.featured,
+        game_date: editingGame.game_date ? new Date(editingGame.game_date) : null,
+        game_time: editingGame.game_time || ''
+      });
+    } else {
+      // Reset form when no game is being edited
+      setFormData({
+        title: '',
+        description: '',
+        featured_image_url: '',
+        trailer_video_url: '',
+        status: 'draft',
+        featured: false,
+        game_date: null,
+        game_time: ''
+      });
+    }
+  }, [editingGame]);
 
   const handleFieldChange = (field: string, value: string | boolean | Date | null) => {
     setFormData({ ...formData, [field]: value });
