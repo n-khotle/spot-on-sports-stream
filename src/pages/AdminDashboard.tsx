@@ -1,171 +1,23 @@
-import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { LogOut, CreditCard } from 'lucide-react';
-import GameForm from '@/components/admin/GameForm';
-import GamesTable from '@/components/admin/GamesTable';
+import GameManagement from '@/components/admin/GameManagement';
 import NewsTable from '@/components/admin/NewsTable';
-import PageForm from '@/components/admin/PageForm';
-import PagesTable from '@/components/admin/PagesTable';
-import StreamingForm from '@/components/admin/StreamingForm';
-import StreamingTable from '@/components/admin/StreamingTable';
-import UserTable from '@/components/admin/UserTable';
-import UserForm from '@/components/admin/UserForm';
-
-interface Game {
-  id: string;
-  title: string;
-  description: string | null;
-  featured_image_url: string | null;
-  trailer_video_url: string | null;
-  status: string;
-  featured: boolean;
-  game_date?: string | null;
-  game_time?: string | null;
-  tags?: string[] | null;
-  created_at: string;
-}
-
-interface Page {
-  id: string;
-  slug: string;
-  title: string;
-  content: string;
-}
-
-interface StreamingSettings {
-  id: string;
-  name: string;
-  stream_key: string;
-  stream_url: string;
-  rtmp_url: string;
-  hls_url: string;
-  quality_preset: string;
-  max_bitrate: number;
-  resolution: string;
-  framerate: number;
-  is_active: boolean;
-  auto_record: boolean;
-  thumbnail_url: string;
-  description: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface User {
-  id: string;
-  user_id: string;
-  email: string;
-  full_name: string | null;
-  role: string;
-  phone_number: string | null;
-  created_at: string;
-}
+import PageManagement from '@/components/admin/PageManagement';
+import StreamingManagement from '@/components/admin/StreamingManagement';
+import UserManagement from '@/components/admin/UserManagement';
 
 const AdminDashboard = () => {
   const { user, isAdmin, signOut, loading } = useAuth();
-  const { toast } = useToast();
-  const [games, setGames] = useState<Game[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [editingGame, setEditingGame] = useState<Game | null>(null);
-  const [editingPage, setEditingPage] = useState<Page | null>(null);
-  const [editingStream, setEditingStream] = useState<StreamingSettings | null>(null);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    if (isAdmin) {
-      fetchGames();
-    }
-  }, [isAdmin]);
 
   // Redirect if not admin - moved AFTER all hooks
   if (!loading && (!user || !isAdmin)) {
     return <Navigate to="/auth" replace />;
   }
 
-  const fetchGames = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('games')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setGames(data || []);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch games",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEditGame = (game: Game) => {
-    setEditingGame(game);
-  };
-
-  const handleGameSaved = () => {
-    setEditingGame(null);
-    fetchGames();
-  };
-
-  const handleCancel = () => {
-    setEditingGame(null);
-  };
-
-  const handleEditPage = (page: Page) => {
-    setEditingPage(page);
-  };
-
-  const handlePageSaved = () => {
-    setEditingPage(null);
-  };
-
-  const handlePageCancel = () => {
-    setEditingPage(null);
-  };
-
-  const handleEditStream = (stream: StreamingSettings) => {
-    console.log('AdminDashboard: Setting editing stream:', stream);
-    setEditingStream(stream);
-  };
-
-  const handleStreamSaved = () => {
-    setEditingStream(null);
-  };
-
-  const handleStreamCancel = () => {
-    setEditingStream(null);
-  };
-
-  const handleStreamsUpdated = () => {
-    // This can be used for any additional logic when streams are updated
-  };
-
-  const handleEditUser = (user: User) => {
-    setEditingUser(user);
-  };
-
-  const handleUserSaved = () => {
-    setEditingUser(null);
-  };
-
-  const handleUserCancel = () => {
-    setEditingUser(null);
-  };
-
-  const handleUsersUpdated = () => {
-    // This can be used for any additional logic when users are updated
-  };
-
-  if (loading || isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -210,18 +62,7 @@ const AdminDashboard = () => {
           </TabsList>
           
           <TabsContent value="games" className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <GameForm 
-                editingGame={editingGame} 
-                onGameSaved={handleGameSaved}
-                onCancel={handleCancel}
-              />
-              <GamesTable 
-                games={games} 
-                onEditGame={handleEditGame}
-                onGamesUpdated={fetchGames}
-              />
-            </div>
+            <GameManagement />
           </TabsContent>
           
           <TabsContent value="news" className="space-y-8">
@@ -229,44 +70,15 @@ const AdminDashboard = () => {
           </TabsContent>
           
           <TabsContent value="pages" className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <PageForm 
-                editingPage={editingPage} 
-                onPageSaved={handlePageSaved}
-                onCancel={handlePageCancel}
-              />
-              <PagesTable 
-                onEditPage={handleEditPage}
-              />
-            </div>
+            <PageManagement />
           </TabsContent>
 
           <TabsContent value="streaming" className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <StreamingForm 
-                editingStream={editingStream} 
-                onStreamSaved={handleStreamSaved}
-                onCancel={handleStreamCancel}
-              />
-              <StreamingTable 
-                onEditStream={handleEditStream}
-                onStreamsUpdated={handleStreamsUpdated}
-              />
-            </div>
+            <StreamingManagement />
           </TabsContent>
 
           <TabsContent value="users" className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <UserForm 
-                editingUser={editingUser} 
-                onUserSaved={handleUserSaved}
-                onCancel={handleUserCancel}
-              />
-              <UserTable 
-                onEditUser={handleEditUser}
-                onUsersUpdated={handleUsersUpdated}
-              />
-            </div>
+            <UserManagement />
           </TabsContent>
         </Tabs>
       </div>
