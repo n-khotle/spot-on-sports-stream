@@ -214,21 +214,6 @@ const Hero = ({ featuredGame }: HeroProps) => {
               )}
             </div>
 
-            {/* Stats */}
-            <div className="flex items-center space-x-8 pt-4 text-sm">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">12+</div>
-                <div className="text-muted-foreground">Games</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">4K</div>
-                <div className="text-muted-foreground">Ultra HD</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">3</div>
-                <div className="text-muted-foreground">Days to Go</div>
-              </div>
-            </div>
           </div>
           
           {/* Video Player */}
