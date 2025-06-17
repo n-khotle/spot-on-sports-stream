@@ -59,48 +59,48 @@ const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewe
       <CardContent className="p-0">
         <div className="aspect-video bg-secondary rounded-t-lg relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
-          <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
+          <div className="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 flex justify-between items-start">
             {getStatusBadge()}
-            <Badge variant="outline">{league}</Badge>
+            <Badge variant="outline" className="text-xs">{league}</Badge>
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-16 h-16 bg-primary/80 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Play className="w-6 h-6 text-primary-foreground fill-current ml-1" />
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/80 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Play className="w-4 h-4 sm:w-6 sm:h-6 text-primary-foreground fill-current ml-1" />
             </div>
           </div>
         </div>
         
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
           <div className="text-center">
-            <h3 className="text-xl font-bold">
+            <h3 className="text-lg sm:text-xl font-bold leading-tight">
               {homeTeam} <span className="text-muted-foreground">vs</span> {awayTeam}
             </h3>
           </div>
           
-          <div className="flex justify-center space-x-6 text-sm text-muted-foreground">
-            <div className="flex items-center space-x-1">
-              <Calendar className="w-4 h-4" />
+          <div className="flex flex-col sm:flex-row justify-center sm:space-x-6 space-y-2 sm:space-y-0 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center space-x-1">
+              <Calendar className="w-4 h-4 flex-shrink-0" />
               <span>{date}</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Clock className="w-4 h-4" />
+            <div className="flex items-center justify-center space-x-1">
+              <Clock className="w-4 h-4 flex-shrink-0" />
               <span>{time}</span>
             </div>
           </div>
           
           {viewers && status === "live" && (
             <div className="flex items-center justify-center space-x-1 text-sm text-muted-foreground">
-              <Users className="w-4 h-4" />
+              <Users className="w-4 h-4 flex-shrink-0" />
               <span>{viewers.toLocaleString()} watching</span>
             </div>
           )}
           
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-col space-y-2 sm:space-y-3">
             <div className="text-center">
-              <span className="text-2xl font-bold text-primary">P15.00</span>
+              <span className="text-xl sm:text-2xl font-bold text-primary">P15.00</span>
             </div>
             <Button 
-              className="w-full" 
+              className="w-full min-h-[44px] text-sm sm:text-base" 
               onClick={handleBuyNow}
               disabled={status === "ended"}
             >

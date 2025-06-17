@@ -46,24 +46,24 @@ const FeaturedGames = () => {
   }));
 
   return (
-    <section className="py-16 bg-background">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">Featured Games</h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+    <section className="py-12 sm:py-16 bg-background">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">Featured Games</h2>
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Don't miss these exciting matches. Get instant access to live and upcoming games.
           </p>
         </div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {transformedGames.map((game, index) => (
             <GameCard key={index} {...game} />
           ))}
         </div>
         
         {games.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">No published games available at the moment.</p>
+          <div className="text-center py-8 sm:py-12">
+            <p className="text-muted-foreground text-base sm:text-lg">No published games available at the moment.</p>
             <p className="text-muted-foreground text-sm mt-2">Check back later for exciting content!</p>
           </div>
         )}
