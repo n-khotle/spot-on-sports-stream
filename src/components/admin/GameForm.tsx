@@ -73,11 +73,7 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
   }, [editingGame]);
 
   const handleFieldChange = (field: string, value: string | boolean | Date | null | string[]) => {
-    console.log(`GameForm handleFieldChange - ${field}:`, value);
-    console.log('Current formData.game_date before update:', formData.game_date);
-    const newFormData = { ...formData, [field]: value };
-    console.log('New formData after update:', newFormData);
-    setFormData(newFormData);
+    setFormData({ ...formData, [field]: value });
   };
 
   const handleImageChange = (url: string) => {
@@ -90,10 +86,12 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
 
   const handleSaveGame = async () => {
     try {
-      // Prepare data for database with proper date formatting
+      // Prepare data for database with proper date formatting (avoiding timezone conversion)
       const dbData = {
         ...formData,
-        game_date: formData.game_date ? formData.game_date.toISOString().split('T')[0] : null,
+        game_date: formData.game_date ? 
+          `${formData.game_date.getFullYear()}-${String(formData.game_date.getMonth() + 1).padStart(2, '0')}-${String(formData.game_date.getDate()).padStart(2, '0')}` 
+          : null,
       };
 
       if (editingGame) {

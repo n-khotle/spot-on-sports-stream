@@ -112,11 +112,6 @@ const GameFormFields = ({ formData, onFieldChange, disabled }: GameFormFieldsPro
                 mode="single"
                 selected={formData.game_date || undefined}
                 onSelect={(date) => {
-                  console.log('Raw Calendar onSelect called with:', date);
-                  console.log('Date type:', typeof date);
-                  console.log('Is Date instance:', date instanceof Date);
-                  
-                  // Simple approach - just pass the date directly first
                   onFieldChange('game_date', date || null);
                 }}
                 initialFocus
