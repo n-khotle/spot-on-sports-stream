@@ -201,6 +201,63 @@ export type Database = {
         }
         Relationships: []
       }
+      streaming_settings: {
+        Row: {
+          auto_record: boolean | null
+          created_at: string
+          description: string | null
+          framerate: number | null
+          hls_url: string | null
+          id: string
+          is_active: boolean | null
+          max_bitrate: number | null
+          name: string
+          quality_preset: string | null
+          resolution: string | null
+          rtmp_url: string | null
+          stream_key: string | null
+          stream_url: string | null
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_record?: boolean | null
+          created_at?: string
+          description?: string | null
+          framerate?: number | null
+          hls_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_bitrate?: number | null
+          name: string
+          quality_preset?: string | null
+          resolution?: string | null
+          rtmp_url?: string | null
+          stream_key?: string | null
+          stream_url?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_record?: boolean | null
+          created_at?: string
+          description?: string | null
+          framerate?: number | null
+          hls_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_bitrate?: number | null
+          name?: string
+          quality_preset?: string | null
+          resolution?: string | null
+          rtmp_url?: string | null
+          stream_key?: string | null
+          stream_url?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           created_at: string

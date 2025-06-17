@@ -11,6 +11,8 @@ import GamesTable from '@/components/admin/GamesTable';
 import NewsTable from '@/components/admin/NewsTable';
 import PageForm from '@/components/admin/PageForm';
 import PagesTable from '@/components/admin/PagesTable';
+import StreamingForm from '@/components/admin/StreamingForm';
+import StreamingTable from '@/components/admin/StreamingTable';
 
 interface Game {
   id: string;
@@ -33,6 +35,25 @@ interface Page {
   content: string;
 }
 
+interface StreamingSettings {
+  id: string;
+  name: string;
+  stream_key: string;
+  stream_url: string;
+  rtmp_url: string;
+  hls_url: string;
+  quality_preset: string;
+  max_bitrate: number;
+  resolution: string;
+  framerate: number;
+  is_active: boolean;
+  auto_record: boolean;
+  thumbnail_url: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const AdminDashboard = () => {
   const { user, isAdmin, signOut, loading } = useAuth();
   const { toast } = useToast();
@@ -40,6 +61,7 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [editingPage, setEditingPage] = useState<Page | null>(null);
+  const [editingStream, setEditingStream] = useState<StreamingSettings | null>(null);
 
   useEffect(() => {
     if (isAdmin) {
@@ -97,6 +119,22 @@ const AdminDashboard = () => {
     setEditingPage(null);
   };
 
+  const handleEditStream = (stream: StreamingSettings) => {
+    setEditingStream(stream);
+  };
+
+  const handleStreamSaved = () => {
+    setEditingStream(null);
+  };
+
+  const handleStreamCancel = () => {
+    setEditingStream(null);
+  };
+
+  const handleStreamsUpdated = () => {
+    // This can be used for any additional logic when streams are updated
+  };
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -133,10 +171,11 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="games" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="games">Games Management</TabsTrigger>
             <TabsTrigger value="news">News Management</TabsTrigger>
             <TabsTrigger value="pages">Pages Management</TabsTrigger>
+            <TabsTrigger value="streaming">Streaming Settings</TabsTrigger>
           </TabsList>
           
           <TabsContent value="games" className="space-y-8">
@@ -167,6 +206,20 @@ const AdminDashboard = () => {
               />
               <PagesTable 
                 onEditPage={handleEditPage}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="streaming" className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <StreamingForm 
+                editingStream={editingStream} 
+                onStreamSaved={handleStreamSaved}
+                onCancel={handleStreamCancel}
+              />
+              <StreamingTable 
+                onEditStream={handleEditStream}
+                onStreamsUpdated={handleStreamsUpdated}
               />
             </div>
           </TabsContent>
