@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import VideoPlayer from '@/components/VideoPlayer';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -150,16 +151,13 @@ const Live = () => {
                         </div>
                       )}
                       {game.trailer_video_url && (
-                        <div className="aspect-video rounded-lg overflow-hidden bg-black">
-                          <video
-                            src={game.trailer_video_url}
-                            controls
-                            className="w-full h-full"
-                            poster={game.featured_image_url || undefined}
-                          >
-                            Your browser does not support the video tag.
-                          </video>
-                        </div>
+                        <VideoPlayer
+                          src={game.trailer_video_url}
+                          poster={game.featured_image_url || undefined}
+                          title={game.title}
+                          isLive={isGameLive(game)}
+                          className="rounded-lg"
+                        />
                       )}
                     </CardContent>
                   </Card>
