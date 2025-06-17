@@ -201,7 +201,7 @@ const Hero = ({ featuredGame }: HeroProps) => {
                     onClick={handleWatchClick}
                   >
                     <Play className="w-6 h-6 mr-3 fill-current group-hover:scale-110 transition-transform" />
-                    {isGameLive(featuredGame) ? "Watch Live - P15.00" : "Watch Preview - P15.00"}
+                    Watch Live
                   </Button>
                   <Button variant="outline" size="lg" className="text-lg px-10 py-4 border-2 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300" asChild>
                     <Link to="/about-us">Learn More</Link>
