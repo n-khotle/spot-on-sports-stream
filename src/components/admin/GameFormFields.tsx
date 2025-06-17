@@ -113,7 +113,21 @@ const GameFormFields = ({ formData, onFieldChange, disabled }: GameFormFieldsPro
                 selected={formData.game_date || undefined}
                 onSelect={(date) => {
                   console.log('Calendar onSelect called with:', date);
-                  onFieldChange('game_date', date || null);
+                  // Handle the date object properly - convert to standard Date
+                  let actualDate: Date | null = null;
+                  if (date) {
+                    if (date instanceof Date) {
+                      actualDate = date;
+                    } else if ((date as any)?.value?.iso) {
+                      actualDate = new Date((date as any).value.iso);
+                    } else if ((date as any)?.value) {
+                      actualDate = new Date((date as any).value);
+                    } else {
+                      actualDate = new Date(date as any);
+                    }
+                  }
+                  console.log('Converted date:', actualDate);
+                  onFieldChange('game_date', actualDate);
                 }}
                 initialFocus
                 className={cn("p-3 pointer-events-auto")}
