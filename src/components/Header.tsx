@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, User, Search, Menu } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Play, User, Search, Menu, Settings } from "lucide-react";
 
 const Header = () => {
+  const { user, isAdmin } = useAuth();
+
   return (
     <header className="bg-background border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -26,10 +29,31 @@ const Header = () => {
           <Button variant="ghost" size="sm" className="hidden md:flex">
             <Search className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="sm">
-            <User className="w-4 h-4 mr-2" />
-            Sign In
-          </Button>
+          
+          {user ? (
+            <div className="flex items-center space-x-2">
+              {isAdmin && (
+                <Button variant="outline" size="sm" asChild>
+                  <a href="/admin">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Admin
+                  </a>
+                </Button>
+              )}
+              <Button variant="outline" size="sm">
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" size="sm" asChild>
+              <a href="/auth">
+                <User className="w-4 h-4 mr-2" />
+                Sign In
+              </a>
+            </Button>
+          )}
+          
           <Button className="md:hidden" variant="ghost" size="sm">
             <Menu className="w-4 h-4" />
           </Button>
