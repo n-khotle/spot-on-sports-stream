@@ -14,6 +14,7 @@ interface Game {
   description: string | null;
   featured_image_url: string | null;
   trailer_video_url: string | null;
+  live_stream_url: string | null;
   status: string;
   featured: boolean;
   game_date: string | null;
@@ -22,32 +23,63 @@ interface Game {
   created_at: string;
 }
 
+interface StreamingSettings {
+  id: string;
+  name: string;
+  stream_key: string;
+  stream_url: string;
+  rtmp_url: string;
+  hls_url: string;
+  quality_preset: string;
+  max_bitrate: number;
+  resolution: string;
+  framerate: number;
+  is_active: boolean;
+  auto_record: boolean;
+  thumbnail_url: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const Live = () => {
   const [liveGames, setLiveGames] = useState<Game[]>([]);
   const [upcomingGames, setUpcomingGames] = useState<Game[]>([]);
+  const [streamingSettings, setStreamingSettings] = useState<StreamingSettings[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchGames();
+    fetchData();
   }, []);
 
-  const fetchGames = async () => {
+  const fetchData = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch games
+      const { data: gamesData, error: gamesError } = await supabase
         .from('games')
         .select('*')
         .in('status', ['live', 'upcoming'])
         .order('game_date', { ascending: true });
 
-      if (error) throw error;
+      if (gamesError) throw gamesError;
 
-      const live = data?.filter(game => game.status === 'live') || [];
-      const upcoming = data?.filter(game => game.status === 'upcoming') || [];
+      // Fetch active streaming settings
+      const { data: streamingData, error: streamingError } = await supabase
+        .from('streaming_settings')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (streamingError) throw streamingError;
+
+      const live = gamesData?.filter(game => game.status === 'live') || [];
+      const upcoming = gamesData?.filter(game => game.status === 'upcoming') || [];
       
       setLiveGames(live);
       setUpcomingGames(upcoming);
+      setStreamingSettings(streamingData || []);
     } catch (error) {
-      console.error('Error fetching games:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -71,6 +103,17 @@ const Live = () => {
     
     const gameDateTime = new Date(`${game.game_date}T${game.game_time}`);
     return gameDateTime.toLocaleString();
+  };
+
+  const getStreamUrl = (game: Game) => {
+    // For live games, prioritize streaming settings
+    if (game.status === 'live' && streamingSettings.length > 0) {
+      const activeStream = streamingSettings[0]; // Get the first active stream
+      // Prioritize HLS for live streaming, fallback to stream_url, then game's video
+      return activeStream.hls_url || activeStream.stream_url || game.live_stream_url || game.trailer_video_url;
+    }
+    // For non-live games, use the game's video URL
+    return game.live_stream_url || game.trailer_video_url;
   };
 
   if (isLoading) {
@@ -150,10 +193,10 @@ const Live = () => {
                           ))}
                         </div>
                       )}
-                      {game.trailer_video_url && (
+                      {getStreamUrl(game) && (
                         <VideoPlayer
-                          src={game.trailer_video_url}
-                          poster={game.featured_image_url || undefined}
+                          src={getStreamUrl(game)!}
+                          poster={game.featured_image_url || (streamingSettings[0]?.thumbnail_url) || undefined}
                           title={game.title}
                           isLive={isGameLive(game)}
                           className="rounded-lg"
