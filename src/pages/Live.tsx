@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import VideoPlayer from '@/components/VideoPlayer';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, Play } from 'lucide-react';
+import { Calendar, Clock, Play, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface Game {
   id: string;
@@ -43,6 +46,7 @@ interface StreamingSettings {
 }
 
 const Live = () => {
+  const { user, loading: authLoading } = useAuth();
   const [liveGames, setLiveGames] = useState<Game[]>([]);
   const [upcomingGames, setUpcomingGames] = useState<Game[]>([]);
   const [streamingSettings, setStreamingSettings] = useState<StreamingSettings[]>([]);
@@ -120,7 +124,7 @@ const Live = () => {
     return game.live_stream_url || game.trailer_video_url;
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -132,6 +136,34 @@ const Live = () => {
                 <Skeleton key={i} className="h-64" />
               ))}
             </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Check if user is authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <Card className="w-full max-w-md">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Lock className="w-16 h-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Login Required</h3>
+                <p className="text-muted-foreground text-center mb-6">
+                  You need to be logged in to access live streams and matches.
+                </p>
+                <Button asChild className="w-full">
+                  <Link to="/auth">
+                    Sign In to Watch Live
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </main>
         <Footer />
