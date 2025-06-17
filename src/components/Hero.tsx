@@ -2,7 +2,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Calendar, Clock } from "lucide-react";
 
-const Hero = () => {
+interface FeaturedGame {
+  id: string;
+  title: string;
+  description: string | null;
+  featured_image_url: string | null;
+  status: string;
+  featured: boolean;
+  created_at: string;
+}
+
+interface HeroProps {
+  featuredGame: FeaturedGame | null;
+}
+
+const Hero = ({ featuredGame }: HeroProps) => {
   return (
     <section className="relative min-h-[80vh] flex items-center overflow-hidden">
       {/* Animated Background */}
@@ -33,24 +47,31 @@ const Hero = () => {
             
             {/* Main Heading */}
             <div className="space-y-4">
-              <h1 className="text-5xl lg:text-7xl font-black leading-none tracking-tight">
-                <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                  Manchester United
-                </span>
-                <div className="flex items-center justify-center my-4">
-                  <div className="h-px bg-gradient-to-r from-transparent via-primary to-transparent flex-1"></div>
-                  <span className="px-4 text-2xl lg:text-3xl text-primary font-bold">VS</span>
-                  <div className="h-px bg-gradient-to-r from-transparent via-primary to-transparent flex-1"></div>
-                </div>
-                <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                  Liverpool FC
-                </span>
-              </h1>
-              
-              <p className="text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-2xl">
-                Experience the thrill of live sports with crystal clear 4K streaming. 
-                Watch every goal, every save, every moment that matters in stunning detail.
-              </p>
+              {featuredGame ? (
+                <>
+                  <h1 className="text-5xl lg:text-7xl font-black leading-none tracking-tight">
+                    <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                      {featuredGame.title}
+                    </span>
+                  </h1>
+                  
+                  <p className="text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-2xl">
+                    {featuredGame.description || "Experience the thrill of live sports with crystal clear 4K streaming."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-5xl lg:text-7xl font-black leading-none tracking-tight">
+                    <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                      No Featured Game
+                    </span>
+                  </h1>
+                  
+                  <p className="text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-2xl">
+                    Check back later for featured content or browse our game library.
+                  </p>
+                </>
+              )}
             </div>
             
             {/* Match Details */}
@@ -67,13 +88,21 @@ const Hero = () => {
             
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button size="lg" className="text-lg px-10 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 group">
-                <Play className="w-6 h-6 mr-3 fill-current group-hover:scale-110 transition-transform" />
-                Watch Live - $9.99
-              </Button>
-              <Button variant="outline" size="lg" className="text-lg px-10 py-4 border-2 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300">
-                View Schedule
-              </Button>
+              {featuredGame ? (
+                <>
+                  <Button size="lg" className="text-lg px-10 py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 group">
+                    <Play className="w-6 h-6 mr-3 fill-current group-hover:scale-110 transition-transform" />
+                    Watch Live - $9.99
+                  </Button>
+                  <Button variant="outline" size="lg" className="text-lg px-10 py-4 border-2 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300">
+                    Learn More
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" size="lg" className="text-lg px-10 py-4 border-2 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300">
+                  View All Games
+                </Button>
+              )}
             </div>
 
             {/* Stats */}
@@ -96,8 +125,16 @@ const Hero = () => {
           {/* Video Preview */}
           <div className="relative lg:scale-110 animate-fade-in delay-300">
             <div className="aspect-video bg-gradient-to-br from-secondary to-secondary/50 rounded-2xl overflow-hidden relative group cursor-pointer border border-border/50 shadow-2xl">
-              {/* Video Background Pattern */}
-              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent"></div>
+              {/* Featured Game Image or Background Pattern */}
+              {featuredGame?.featured_image_url ? (
+                <img 
+                  src={featuredGame.featured_image_url} 
+                  alt={featuredGame.title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent"></div>
+              )}
               
               {/* Play Button */}
               <div className="absolute inset-0 flex items-center justify-center">
@@ -115,12 +152,18 @@ const Hero = () => {
               <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background/95 to-transparent">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="font-bold text-lg text-foreground">Match Preview</h3>
-                    <p className="text-muted-foreground text-sm">Official highlights & analysis</p>
+                    <h3 className="font-bold text-lg text-foreground">
+                      {featuredGame ? featuredGame.title : "Game Preview"}
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      {featuredGame ? "Featured game content" : "Browse our game library"}
+                    </p>
                   </div>
-                  <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-500 animate-pulse">
-                    LIVE
-                  </Badge>
+                  {featuredGame && (
+                    <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-500 animate-pulse">
+                      FEATURED
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>

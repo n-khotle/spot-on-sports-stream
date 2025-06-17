@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          featured: boolean
           featured_image_url: string | null
           id: string
           status: string
@@ -22,6 +23,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          featured?: boolean
           featured_image_url?: string | null
           id?: string
           status?: string
@@ -31,6 +33,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          featured?: boolean
           featured_image_url?: string | null
           id?: string
           status?: string

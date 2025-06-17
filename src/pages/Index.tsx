@@ -7,9 +7,11 @@ import Footer from "@/components/Footer";
 
 const Index = () => {
   const [games, setGames] = useState([]);
+  const [featuredGame, setFeaturedGame] = useState(null);
 
   useEffect(() => {
     fetchPublishedGames();
+    fetchFeaturedGame();
   }, []);
 
   const fetchPublishedGames = async () => {
@@ -22,10 +24,21 @@ const Index = () => {
     setGames(data || []);
   };
 
+  const fetchFeaturedGame = async () => {
+    const { data } = await supabase
+      .from('games')
+      .select('*')
+      .eq('featured', true)
+      .eq('status', 'published')
+      .maybeSingle();
+    
+    setFeaturedGame(data);
+  };
+
   return (
     <div className="min-h-screen bg-background dark">
       <Header />
-      <Hero />
+      <Hero featuredGame={featuredGame} />
       <FeaturedGames />
       <Footer />
     </div>

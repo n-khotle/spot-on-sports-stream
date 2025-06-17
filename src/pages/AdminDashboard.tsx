@@ -8,10 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit, Trash2, LogOut, Save } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, Save, Star } from 'lucide-react';
 
 interface Game {
   id: string;
@@ -19,6 +20,7 @@ interface Game {
   description: string | null;
   featured_image_url: string | null;
   status: string;
+  featured: boolean;
   created_at: string;
 }
 
@@ -32,7 +34,8 @@ const AdminDashboard = () => {
     title: '',
     description: '',
     featured_image_url: '',
-    status: 'draft'
+    status: 'draft',
+    featured: false
   });
 
   // Redirect if not admin
@@ -88,7 +91,7 @@ const AdminDashboard = () => {
       }
 
       setEditingGame(null);
-      setFormData({ title: '', description: '', featured_image_url: '', status: 'draft' });
+      setFormData({ title: '', description: '', featured_image_url: '', status: 'draft', featured: false });
       fetchGames();
     } catch (error: any) {
       toast({
@@ -105,7 +108,8 @@ const AdminDashboard = () => {
       title: game.title,
       description: game.description || '',
       featured_image_url: game.featured_image_url || '',
-      status: game.status
+      status: game.status,
+      featured: game.featured
     });
   };
 
@@ -132,7 +136,30 @@ const AdminDashboard = () => {
 
   const resetForm = () => {
     setEditingGame(null);
-    setFormData({ title: '', description: '', featured_image_url: '', status: 'draft' });
+    setFormData({ title: '', description: '', featured_image_url: '', status: 'draft', featured: false });
+  };
+
+  const handleToggleFeatured = async (gameId: string, currentFeatured: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('games')
+        .update({ featured: !currentFeatured })
+        .eq('id', gameId);
+
+      if (error) throw error;
+      
+      toast({ 
+        title: "Success", 
+        description: `Game ${!currentFeatured ? 'featured' : 'unfeatured'} successfully!` 
+      });
+      fetchGames();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading || isLoading) {
@@ -216,6 +243,15 @@ const AdminDashboard = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="featured"
+                  checked={formData.featured}
+                  onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
+                />
+                <Label htmlFor="featured">Featured Game</Label>
+              </div>
               
               <div className="flex space-x-2">
                 <Button onClick={handleSaveGame} className="flex-1">
@@ -243,6 +279,7 @@ const AdminDashboard = () => {
                   <TableRow>
                     <TableHead>Title</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Featured</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -255,6 +292,21 @@ const AdminDashboard = () => {
                         <Badge variant={game.status === 'published' ? 'default' : 'secondary'}>
                           {game.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          {game.featured && (
+                            <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                          )}
+                          <Button
+                            onClick={() => handleToggleFeatured(game.id, game.featured)}
+                            size="sm"
+                            variant={game.featured ? "default" : "outline"}
+                            className="h-6 text-xs"
+                          >
+                            {game.featured ? 'Featured' : 'Feature'}
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell>
                         {new Date(game.created_at).toLocaleDateString()}
@@ -281,7 +333,7 @@ const AdminDashboard = () => {
                   ))}
                   {games.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                         No games created yet. Add your first game!
                       </TableCell>
                     </TableRow>
