@@ -23,16 +23,16 @@ const VideoUpload = ({ videoUrl, onVideoChange, disabled }: VideoUploadProps) =>
     setUploadingVideo(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `videos/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
-        .from('game-images')
+        .from('game-videos')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
-        .from('game-images')
+        .from('game-videos')
         .getPublicUrl(fileName);
 
       return data.publicUrl;
