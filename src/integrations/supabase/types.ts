@@ -51,6 +51,54 @@ export type Database = {
         }
         Relationships: []
       }
+      news_articles: {
+        Row: {
+          author_id: string
+          author_name: string
+          content: string
+          created_at: string
+          excerpt: string | null
+          featured: boolean
+          featured_image_url: string | null
+          id: string
+          published: boolean
+          tags: string[] | null
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          author_id: string
+          author_name: string
+          content: string
+          created_at?: string
+          excerpt?: string | null
+          featured?: boolean
+          featured_image_url?: string | null
+          id?: string
+          published?: boolean
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          author_id?: string
+          author_name?: string
+          content?: string
+          created_at?: string
+          excerpt?: string | null
+          featured?: boolean
+          featured_image_url?: string | null
+          id?: string
+          published?: boolean
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

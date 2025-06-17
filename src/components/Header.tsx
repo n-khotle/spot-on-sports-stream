@@ -23,7 +23,7 @@ const Header = () => {
             <Link to="/" className="text-foreground hover:text-primary transition-colors">Live</Link>
             <a href="#" className="text-muted-foreground hover:text-primary transition-colors">Sports</a>
             <Link to="/schedule" className="text-muted-foreground hover:text-primary transition-colors">Schedule</Link>
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">News</a>
+            <Link to="/news" className="text-muted-foreground hover:text-primary transition-colors">News</Link>
           </nav>
         </div>
 
