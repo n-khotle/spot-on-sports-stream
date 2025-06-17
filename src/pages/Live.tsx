@@ -146,8 +146,31 @@ const Live = () => {
               <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
               <h1 className="text-3xl font-bold">Live Now</h1>
             </div>
+            {/* Live Stream Section */}
+            {streamingSettings.length > 0 && liveGames.length === 0 && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                    <span>Live Stream - {streamingSettings[0].name}</span>
+                  </CardTitle>
+                  {streamingSettings[0].description && (
+                    <p className="text-muted-foreground">{streamingSettings[0].description}</p>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <VideoPlayer
+                    src={streamingSettings[0].hls_url || streamingSettings[0].stream_url}
+                    poster={streamingSettings[0].thumbnail_url || undefined}
+                    title={`Live Stream - ${streamingSettings[0].name}`}
+                    isLive={true}
+                    className="rounded-lg"
+                  />
+                </CardContent>
+              </Card>
+            )}
             
-            {liveGames.length === 0 ? (
+            {liveGames.length === 0 && streamingSettings.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Play className="w-16 h-16 text-muted-foreground mb-4" />
