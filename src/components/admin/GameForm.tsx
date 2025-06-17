@@ -73,6 +73,7 @@ const GameForm = ({ editingGame, onGameSaved, onCancel }: GameFormProps) => {
   }, [editingGame]);
 
   const handleFieldChange = (field: string, value: string | boolean | Date | null | string[]) => {
+    console.log(`GameForm handleFieldChange - ${field}:`, value);
     setFormData({ ...formData, [field]: value });
   };
 

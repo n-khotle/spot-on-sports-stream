@@ -111,7 +111,10 @@ const GameFormFields = ({ formData, onFieldChange, disabled }: GameFormFieldsPro
               <Calendar
                 mode="single"
                 selected={formData.game_date || undefined}
-                onSelect={(date) => onFieldChange('game_date', date || null)}
+                onSelect={(date) => {
+                  console.log('Calendar onSelect called with:', date);
+                  onFieldChange('game_date', date || null);
+                }}
                 initialFocus
                 className={cn("p-3 pointer-events-auto")}
               />
