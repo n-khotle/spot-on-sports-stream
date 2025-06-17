@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, CreditCard, DollarSign, Settings, Save, TestTube, AlertCircle, Link, Plus, Copy, ExternalLink, Trash2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Settings, Save, TestTube, AlertCircle, Link, Plus, Copy, ExternalLink, Trash2, Download } from 'lucide-react';
 
 interface PaymentLink {
   id: string;
@@ -47,6 +47,8 @@ const PaymentSettings = () => {
     currency: 'usd'
   });
   const [creatingLink, setCreatingLink] = useState(false);
+  const [importLinkUrl, setImportLinkUrl] = useState('');
+  const [importingLink, setImportingLink] = useState(false);
 
   // Redirect if not admin
   if (!loading && (!user || !isAdmin)) {
@@ -126,6 +128,63 @@ const PaymentSettings = () => {
       });
     } finally {
       setCreatingLink(false);
+    }
+  };
+
+  const handleImportPaymentLink = async () => {
+    if (!importLinkUrl.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid Stripe payment link URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate URL format
+    if (!importLinkUrl.includes('buy.stripe.com') && !importLinkUrl.includes('checkout.stripe.com')) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid Stripe payment link URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setImportingLink(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('import-payment-link', {
+        body: { url: importLinkUrl.trim() }
+      });
+
+      if (error) throw error;
+
+      const importedLink: PaymentLink = {
+        id: data.id,
+        url: importLinkUrl.trim(),
+        title: data.title || 'Imported Payment Link',
+        description: data.description || '',
+        amount: data.amount || 0,
+        currency: data.currency || 'usd',
+        active: data.active !== false,
+        created_at: new Date().toISOString()
+      };
+
+      setPaymentLinks([...paymentLinks, importedLink]);
+      setImportLinkUrl('');
+      
+      toast({
+        title: "Payment Link Imported",
+        description: "Stripe payment link has been imported successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to import payment link",
+        variant: "destructive",
+      });
+    } finally {
+      setImportingLink(false);
     }
   };
 
@@ -456,6 +515,41 @@ const PaymentSettings = () => {
                 >
                   {creatingLink ? 'Creating...' : 'Create Payment Link'}
                 </Button>
+              </div>
+
+              {/* Import Existing Payment Link */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <h4 className="font-medium flex items-center">
+                  <Download className="w-4 h-4 mr-2" />
+                  Import Existing Payment Link
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Paste a Stripe payment link URL to import an existing payment link from your Stripe dashboard.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="importUrl">Stripe Payment Link URL</Label>
+                    <Input
+                      id="importUrl"
+                      value={importLinkUrl}
+                      onChange={(e) => setImportLinkUrl(e.target.value)}
+                      placeholder="https://buy.stripe.com/..."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Supports URLs from buy.stripe.com or checkout.stripe.com
+                    </p>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleImportPaymentLink} 
+                    disabled={importingLink || !importLinkUrl.trim()}
+                    variant="outline"
+                    className="w-full md:w-auto"
+                  >
+                    {importingLink ? 'Importing...' : 'Import Payment Link'}
+                  </Button>
+                </div>
               </div>
 
               {/* Existing Payment Links */}
