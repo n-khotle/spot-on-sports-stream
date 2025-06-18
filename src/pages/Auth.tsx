@@ -48,10 +48,10 @@ const Auth = () => {
     setError('');
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
+    const emailOrPhone = formData.get('emailOrPhone') as string;
     const password = formData.get('password') as string;
 
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(emailOrPhone, password);
     
     if (error) {
       setError(error.message);
@@ -152,12 +152,12 @@ const Auth = () => {
             <TabsContent value="signin" className="space-y-4">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-emailOrPhone">Email or Phone Number</Label>
                   <Input
-                    id="signin-email"
-                    name="email"
-                    type="email"
-                    placeholder="your@email.com"
+                    id="signin-emailOrPhone"
+                    name="emailOrPhone"
+                    type="text"
+                    placeholder="your@email.com or +1234567890"
                     required
                   />
                 </div>

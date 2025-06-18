@@ -19,7 +19,7 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   signUp: (email: string, password: string, fullName?: string, phoneNumber?: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (emailOrPhone: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -98,13 +98,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return { error };
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const signIn = async (emailOrPhone: string, password: string) => {
+    // Check if input is email or phone number
+    const isEmail = emailOrPhone.includes('@');
     
-    return { error };
+    if (isEmail) {
+      // Sign in with email
+      const { error } = await supabase.auth.signInWithPassword({
+        email: emailOrPhone,
+        password,
+      });
+      return { error };
+    } else {
+      // Sign in with phone number - first find the email associated with this phone
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('phone_number', emailOrPhone)
+        .single();
+      
+      if (profileError || !profile) {
+        return { error: { message: 'Phone number not found' } };
+      }
+      
+      // Now sign in with the found email
+      const { error } = await supabase.auth.signInWithPassword({
+        email: profile.email,
+        password,
+      });
+      return { error };
+    }
   };
 
   const signOut = async () => {
