@@ -50,12 +50,12 @@ const SignInForm = ({ onSuccess }: SignInFormProps) => {
   return (
     <form onSubmit={handleSignIn} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="signin-emailOrPhone">Email</Label>
+        <Label htmlFor="signin-emailOrPhone">Email or Phone Number</Label>
         <Input
           id="signin-emailOrPhone"
           name="emailOrPhone"
           type="text"
-          placeholder="your@email.com"
+          placeholder="your@email.com or +1234567890"
           required
         />
       </div>
