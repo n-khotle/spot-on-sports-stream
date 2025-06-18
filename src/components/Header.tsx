@@ -22,10 +22,10 @@ const Header = () => {
               <img 
                 src={settings.logo_url} 
                 alt="Logo"
-                className="w-20 h-20 object-contain"
+                className="w-34 h-34 object-contain"
               />
             ) : (
-              <div className="w-20 h-20 bg-primary rounded-lg flex items-center justify-center">
+              <div className="w-34 h-34 bg-primary rounded-lg flex items-center justify-center">
                 <Play className="w-10 h-10 text-primary-foreground fill-current" />
               </div>
             )}

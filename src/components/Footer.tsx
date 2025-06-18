@@ -14,10 +14,10 @@ const Footer = () => {
                 <img 
                   src={settings.logo_url} 
                   alt="Logo"
-                  className="w-10 h-10 object-contain"
+                  className="w-17 h-17 object-contain"
                 />
               ) : (
-                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <div className="w-17 h-17 bg-primary rounded-lg flex items-center justify-center">
                   <Play className="w-5 h-5 text-primary-foreground fill-current" />
                 </div>
               )}
