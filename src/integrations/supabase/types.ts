@@ -204,24 +204,36 @@ export type Database = {
       site_settings: {
         Row: {
           created_at: string
+          facebook_handle: string | null
           id: string
+          instagram_handle: string | null
           logo_url: string | null
           site_name: string
+          tiktok_handle: string | null
           updated_at: string
+          x_handle: string | null
         }
         Insert: {
           created_at?: string
+          facebook_handle?: string | null
           id?: string
+          instagram_handle?: string | null
           logo_url?: string | null
           site_name?: string
+          tiktok_handle?: string | null
           updated_at?: string
+          x_handle?: string | null
         }
         Update: {
           created_at?: string
+          facebook_handle?: string | null
           id?: string
+          instagram_handle?: string | null
           logo_url?: string | null
           site_name?: string
+          tiktok_handle?: string | null
           updated_at?: string
+          x_handle?: string | null
         }
         Relationships: []
       }

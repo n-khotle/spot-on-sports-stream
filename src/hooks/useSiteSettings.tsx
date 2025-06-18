@@ -5,6 +5,10 @@ interface SiteSettings {
   id: string;
   site_name: string;
   logo_url: string | null;
+  instagram_handle: string | null;
+  facebook_handle: string | null;
+  x_handle: string | null;
+  tiktok_handle: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -11,12 +11,20 @@ interface SiteSettings {
   id: string;
   site_name: string;
   logo_url: string | null;
+  instagram_handle: string | null;
+  facebook_handle: string | null;
+  x_handle: string | null;
+  tiktok_handle: string | null;
 }
 
 const SiteSettings = () => {
   const { toast } = useToast();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [siteName, setSiteName] = useState("");
+  const [instagramHandle, setInstagramHandle] = useState("");
+  const [facebookHandle, setFacebookHandle] = useState("");
+  const [xHandle, setXHandle] = useState("");
+  const [tiktokHandle, setTiktokHandle] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,6 +50,10 @@ const SiteSettings = () => {
         setSettings(data);
         setSiteName(data.site_name);
         setLogoPreview(data.logo_url);
+        setInstagramHandle(data.instagram_handle || "");
+        setFacebookHandle(data.facebook_handle || "");
+        setXHandle(data.x_handle || "");
+        setTiktokHandle(data.tiktok_handle || "");
       }
     } catch (error) {
       console.error('Error fetching site settings:', error);
@@ -100,6 +112,10 @@ const SiteSettings = () => {
       const settingsData = {
         site_name: siteName,
         logo_url: logoUrl,
+        instagram_handle: instagramHandle || null,
+        facebook_handle: facebookHandle || null,
+        x_handle: xHandle || null,
+        tiktok_handle: tiktokHandle || null,
       };
 
       if (settings) {
@@ -218,6 +234,49 @@ const SiteSettings = () => {
             <p className="text-xs text-muted-foreground">
               Recommended: PNG or SVG format, max 2MB
             </p>
+          </div>
+        </div>
+
+        {/* Social Media Handles */}
+        <div className="space-y-4">
+          <Label>Social Media Handles</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="instagram">Instagram</Label>
+              <Input
+                id="instagram"
+                value={instagramHandle}
+                onChange={(e) => setInstagramHandle(e.target.value)}
+                placeholder="@username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="facebook">Facebook</Label>
+              <Input
+                id="facebook"
+                value={facebookHandle}
+                onChange={(e) => setFacebookHandle(e.target.value)}
+                placeholder="@username or page name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="x">X (Twitter)</Label>
+              <Input
+                id="x"
+                value={xHandle}
+                onChange={(e) => setXHandle(e.target.value)}
+                placeholder="@username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tiktok">TikTok</Label>
+              <Input
+                id="tiktok"
+                value={tiktokHandle}
+                onChange={(e) => setTiktokHandle(e.target.value)}
+                placeholder="@username"
+              />
+            </div>
           </div>
         </div>
 
