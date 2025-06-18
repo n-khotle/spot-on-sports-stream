@@ -110,15 +110,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       return { error };
     } else {
-      // Sign in with phone number - first find the email associated with this phone
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('phone_number', emailOrPhone)
-        .single();
+      // Sign in with phone number - first normalize the phone number and find the email
+      const normalizedPhone = emailOrPhone.replace(/\D/g, ''); // Remove all non-digits
       
-      if (profileError || !profile) {
-        return { error: { message: 'Phone number not found' } };
+      console.log('Searching for phone number:', normalizedPhone);
+      
+      // Try to find profile with exact match first
+      let { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('email, phone_number')
+        .eq('phone_number', emailOrPhone)
+        .maybeSingle();
+      
+      // If no exact match, try with normalized phone number
+      if (!profile && !profileError) {
+        console.log('No exact match, trying normalized search');
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('email, phone_number')
+          .not('phone_number', 'is', null);
+        
+        // Find profile where normalized phone matches
+        profile = profiles?.find(p => {
+          if (!p.phone_number) return false;
+          const storedNormalized = p.phone_number.replace(/\D/g, '');
+          return storedNormalized === normalizedPhone;
+        }) || null;
+      }
+      
+      console.log('Found profile:', profile);
+      
+      if (!profile) {
+        return { error: { message: 'No account found with this phone number. Please check the number or sign up first.' } };
       }
       
       // Now sign in with the found email
@@ -126,7 +149,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         email: profile.email,
         password,
       });
-      return { error };
+      
+      if (error) {
+        // Provide more specific error messages
+        if (error.message.includes('Invalid login credentials')) {
+          return { error: { message: 'Incorrect password. Please try again.' } };
+        }
+        return { error };
+      }
+      
+      return { error: null };
     }
   };
 
