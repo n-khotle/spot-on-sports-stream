@@ -15,6 +15,8 @@ interface SiteSettings {
   facebook_handle: string | null;
   x_handle: string | null;
   tiktok_handle: string | null;
+  google_analytics_id: string | null;
+  meta_pixel_id: string | null;
 }
 
 const SiteSettings = () => {
@@ -25,6 +27,8 @@ const SiteSettings = () => {
   const [facebookHandle, setFacebookHandle] = useState("");
   const [xHandle, setXHandle] = useState("");
   const [tiktokHandle, setTiktokHandle] = useState("");
+  const [googleAnalyticsId, setGoogleAnalyticsId] = useState("");
+  const [metaPixelId, setMetaPixelId] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,6 +58,8 @@ const SiteSettings = () => {
         setFacebookHandle(data.facebook_handle || "");
         setXHandle(data.x_handle || "");
         setTiktokHandle(data.tiktok_handle || "");
+        setGoogleAnalyticsId(data.google_analytics_id || "");
+        setMetaPixelId(data.meta_pixel_id || "");
       }
     } catch (error) {
       console.error('Error fetching site settings:', error);
@@ -116,6 +122,8 @@ const SiteSettings = () => {
         facebook_handle: facebookHandle || null,
         x_handle: xHandle || null,
         tiktok_handle: tiktokHandle || null,
+        google_analytics_id: googleAnalyticsId || null,
+        meta_pixel_id: metaPixelId || null,
       };
 
       if (settings) {
@@ -276,6 +284,37 @@ const SiteSettings = () => {
                 onChange={(e) => setTiktokHandle(e.target.value)}
                 placeholder="@username"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Analytics & Tracking */}
+        <div className="space-y-4">
+          <Label>Analytics & Tracking</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="googleAnalytics">Google Analytics ID</Label>
+              <Input
+                id="googleAnalytics"
+                value={googleAnalyticsId}
+                onChange={(e) => setGoogleAnalyticsId(e.target.value)}
+                placeholder="G-XXXXXXXXXX"
+              />
+              <p className="text-xs text-muted-foreground">
+                Format: G-XXXXXXXXXX (GA4) or UA-XXXXXXXXX-X (Universal Analytics)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="metaPixel">Meta Pixel ID</Label>
+              <Input
+                id="metaPixel"
+                value={metaPixelId}
+                onChange={(e) => setMetaPixelId(e.target.value)}
+                placeholder="123456789012345"
+              />
+              <p className="text-xs text-muted-foreground">
+                Your Facebook/Meta Pixel ID (15-16 digits)
+              </p>
             </div>
           </div>
         </div>

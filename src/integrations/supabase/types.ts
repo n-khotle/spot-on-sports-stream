@@ -205,9 +205,11 @@ export type Database = {
         Row: {
           created_at: string
           facebook_handle: string | null
+          google_analytics_id: string | null
           id: string
           instagram_handle: string | null
           logo_url: string | null
+          meta_pixel_id: string | null
           site_name: string
           tiktok_handle: string | null
           updated_at: string
@@ -216,9 +218,11 @@ export type Database = {
         Insert: {
           created_at?: string
           facebook_handle?: string | null
+          google_analytics_id?: string | null
           id?: string
           instagram_handle?: string | null
           logo_url?: string | null
+          meta_pixel_id?: string | null
           site_name?: string
           tiktok_handle?: string | null
           updated_at?: string
@@ -227,9 +231,11 @@ export type Database = {
         Update: {
           created_at?: string
           facebook_handle?: string | null
+          google_analytics_id?: string | null
           id?: string
           instagram_handle?: string | null
           logo_url?: string | null
+          meta_pixel_id?: string | null
           site_name?: string
           tiktok_handle?: string | null
           updated_at?: string

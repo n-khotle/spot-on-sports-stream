@@ -9,6 +9,8 @@ interface SiteSettings {
   facebook_handle: string | null;
   x_handle: string | null;
   tiktok_handle: string | null;
+  google_analytics_id: string | null;
+  meta_pixel_id: string | null;
   created_at: string;
   updated_at: string;
 }
