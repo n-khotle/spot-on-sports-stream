@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,17 +10,37 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, UserPlus } from 'lucide-react';
+import PasswordStrengthIndicator from '@/components/PasswordStrengthIndicator';
 
 const Auth = () => {
   const { user, signIn, signUp, loading } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Redirect if already authenticated
   if (user && !loading) {
     return <Navigate to="/" replace />;
   }
+
+  const validatePasswordMatch = () => {
+    return signupPassword === confirmPassword;
+  };
+
+  const validatePasswordStrength = () => {
+    const checks = {
+      length: signupPassword.length >= 8,
+      lowercase: /[a-z]/.test(signupPassword),
+      uppercase: /[A-Z]/.test(signupPassword),
+      number: /\d/.test(signupPassword),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(signupPassword),
+    };
+    
+    const score = Object.values(checks).filter(Boolean).length;
+    return score >= 3; // Require at least medium strength
+  };
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -58,8 +79,33 @@ const Auth = () => {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const fullName = formData.get('fullName') as string;
+    const phoneNumber = formData.get('phoneNumber') as string;
 
-    const { error } = await signUp(email, password, fullName);
+    // Validate password strength
+    if (!validatePasswordStrength()) {
+      setError('Password must be at least medium strength');
+      toast({
+        title: "Error",
+        description: "Password must be at least medium strength",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate password match
+    if (!validatePasswordMatch()) {
+      setError('Passwords do not match');
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    const { error } = await signUp(email, password, fullName, phoneNumber);
     
     if (error) {
       setError(error.message);
@@ -163,15 +209,45 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="signup-phone">Phone Number</Label>
+                  <Input
+                    id="signup-phone"
+                    name="phoneNumber"
+                    type="tel"
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
                   <Input
                     id="signup-password"
                     name="password"
                     type="password"
                     placeholder="••••••••"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
                     required
                     minLength={6}
                   />
+                  <PasswordStrengthIndicator password={signupPassword} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                  {confirmPassword && !validatePasswordMatch() && (
+                    <p className="text-sm text-red-600">Passwords do not match</p>
+                  )}
+                  {confirmPassword && validatePasswordMatch() && (
+                    <p className="text-sm text-green-600">Passwords match</p>
+                  )}
                 </div>
                 {error && (
                   <Alert variant="destructive">
