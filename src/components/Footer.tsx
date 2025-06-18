@@ -14,11 +14,11 @@ const Footer = () => {
                 <img 
                   src={settings.logo_url} 
                   alt="Logo"
-                  className="w-8 h-8 object-contain"
+                  className="w-10 h-10 object-contain"
                 />
               ) : (
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <Play className="w-4 h-4 text-primary-foreground fill-current" />
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <Play className="w-5 h-5 text-primary-foreground fill-current" />
                 </div>
               )}
               <span className="text-xl font-bold">{settings?.site_name || 'Spot On'}</span>
