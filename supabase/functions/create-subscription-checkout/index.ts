@@ -72,19 +72,30 @@ serve(async (req) => {
       throw new Error("This price is not active in Stripe");
     }
     
-    // Get product details from Supabase - let's try a different approach
-    logStep("Looking up price in database", { priceId });
+    // First, let's check what prices exist in the database for debugging
+    logStep("Checking all prices in database for debugging", { priceId });
+    
+    const { data: allPrices, error: allPricesError } = await supabaseClient
+      .from("subscription_prices")
+      .select("id, stripe_price_id, active, product_id");
+    
+    logStep("All prices in database", { allPrices, error: allPricesError });
+    
+    // Now let's specifically look for our price
+    logStep("Looking up specific price in database", { priceId });
     
     const { data: dbPrices, error: priceError } = await supabaseClient
       .from("subscription_prices")
       .select(`
+        id,
         product_id,
+        stripe_price_id,
+        active,
         subscription_products!inner(id, name)
       `)
-      .eq("stripe_price_id", priceId)
-      .eq("active", true);
+      .eq("stripe_price_id", priceId);
 
-    logStep("Database query result", { dbPrices, error: priceError });
+    logStep("Database query result for specific price", { dbPrices, error: priceError });
 
     if (priceError) {
       logStep("Database query error", { error: priceError });
@@ -93,22 +104,17 @@ serve(async (req) => {
 
     if (!dbPrices || dbPrices.length === 0) {
       logStep("No matching price found in database", { priceId });
-      
-      // Let's also check if the price exists but is inactive
-      const { data: inactivePrices } = await supabaseClient
-        .from("subscription_prices")
-        .select("active")
-        .eq("stripe_price_id", priceId);
-      
-      if (inactivePrices && inactivePrices.length > 0) {
-        logStep("Price exists but is inactive", { priceId, inactivePrices });
-        throw new Error(`This price (${priceId}) exists but is not active. Please activate it in the admin panel.`);
-      }
-      
       throw new Error(`This product price (${priceId}) has not been synced to the database yet. Please sync the product from the admin panel first.`);
     }
 
-    const dbPrice = dbPrices[0];
+    // Check if any of the found prices are active
+    const activePrices = dbPrices.filter(p => p.active);
+    if (activePrices.length === 0) {
+      logStep("Price exists but is inactive", { priceId, dbPrices });
+      throw new Error(`This price (${priceId}) exists but is not active. Please activate it in the admin panel.`);
+    }
+
+    const dbPrice = activePrices[0];
     const productId = dbPrice.product_id;
     const productName = (dbPrice as any).subscription_products?.name || "Unknown Product";
     logStep("Found product in database", { productId, productName });
