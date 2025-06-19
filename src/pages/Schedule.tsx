@@ -114,21 +114,14 @@ const Schedule = () => {
                 {games.map((game) => (
                   <TableRow key={game.id} className="hover:bg-muted/50">
                     <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{game.title}</span>
-                          {game.featured && (
-                            <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-500 text-xs">
-                              FEATURED
-                            </Badge>
-                          )}
-                        </div>
-                        {game.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {game.description}
-                          </p>
-                        )}
-                      </div>
+                       <div className="space-y-1">
+                         <span className="font-semibold">{game.title}</span>
+                         {game.description && (
+                           <p className="text-sm text-muted-foreground line-clamp-1">
+                             {game.description}
+                           </p>
+                         )}
+                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
@@ -152,11 +145,11 @@ const Schedule = () => {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={game.featured ? "default" : "secondary"}>
-                        {game.featured ? "Live" : "Upcoming"}
-                      </Badge>
-                    </TableCell>
+                     <TableCell>
+                       <Badge variant="secondary">
+                         Upcoming
+                       </Badge>
+                     </TableCell>
                     <TableCell className="text-right">
                       <Button 
                         size="sm"
