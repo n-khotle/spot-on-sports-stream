@@ -9,19 +9,18 @@ const Footer = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           <div className="space-y-4 text-center sm:text-left lg:col-span-1">
-            <div className="flex items-center justify-center sm:justify-start space-x-2">
+            <div className="flex items-center justify-center sm:justify-start">
               {settings?.logo_url ? (
                 <img 
                   src={settings.logo_url} 
                   alt="Logo"
-                  className="w-10 h-10 object-contain"
+                  className="w-16 h-16 object-contain"
                 />
               ) : (
-                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                  <Play className="w-5 h-5 text-primary-foreground fill-current" />
+                <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center">
+                  <Play className="w-8 h-8 text-primary-foreground fill-current" />
                 </div>
               )}
-              <span className="text-xl font-bold">{settings?.site_name || 'Spot On'}</span>
             </div>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
               The ultimate destination for live sports streaming. Never miss a moment.
