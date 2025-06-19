@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Play, 
   Pause, 
@@ -11,7 +15,8 @@ import {
   Minimize, 
   Settings,
   Download,
-  MoreVertical
+  MoreVertical,
+  Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -31,6 +36,9 @@ interface VideoPlayerProps {
 }
 
 const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPlayerProps) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -43,8 +51,31 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [quality, setQuality] = useState('Auto');
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   let hideControlsTimeout: NodeJS.Timeout;
+
+  // Fetch user profile to check allocated products
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('allocated_subscription_products')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+        setUserProfile(data);
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -156,6 +187,36 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
+
+  // Check if user has access to live content
+  const hasLiveAccess = () => {
+    if (!user || !userProfile) return false;
+    return userProfile.allocated_subscription_products && 
+           userProfile.allocated_subscription_products.length > 0;
+  };
+
+  const handleWatchLiveClick = () => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please sign in to watch live streams",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!hasLiveAccess()) {
+      toast({
+        title: "Subscription Required",
+        description: "You need an active subscription to watch live streams",
+        variant: "destructive",
+      });
+      navigate('/subscription');
+      return;
+    }
+
+    togglePlay();
+  };
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -419,17 +480,30 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
       {/* Watch Live Button Overlay */}
       {isLive && !isPlaying && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <Button
-            onClick={togglePlay}
-            size="lg"
-            className="px-8 py-4 text-lg font-semibold bg-red-600 hover:bg-red-700 text-white border-2 border-white/30 rounded-full shadow-2xl animate-pulse hover:animate-none transition-all duration-300 hover:scale-105"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-              <span>Watch Live</span>
-              <Play className="w-5 h-5 fill-white ml-1" />
-            </div>
-          </Button>
+          {hasLiveAccess() ? (
+            <Button
+              onClick={handleWatchLiveClick}
+              size="lg"
+              className="px-8 py-4 text-lg font-semibold bg-red-600 hover:bg-red-700 text-white border-2 border-white/30 rounded-full shadow-2xl animate-pulse hover:animate-none transition-all duration-300 hover:scale-105"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                <span>Watch Live</span>
+                <Play className="w-5 h-5 fill-white ml-1" />
+              </div>
+            </Button>
+          ) : (
+            <Button
+              onClick={handleWatchLiveClick}
+              size="lg"
+              className="px-8 py-4 text-lg font-semibold bg-gray-600 hover:bg-gray-700 text-white border-2 border-white/30 rounded-full shadow-2xl transition-all duration-300 hover:scale-105"
+            >
+              <div className="flex items-center space-x-3">
+                <Lock className="w-5 h-5" />
+                <span>Get Access</span>
+              </div>
+            </Button>
+          )}
         </div>
       )}
 
