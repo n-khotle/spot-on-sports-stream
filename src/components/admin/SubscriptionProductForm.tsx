@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2, X } from 'lucide-react';
+import SubscriptionImageUpload from './SubscriptionImageUpload';
 
 interface SubscriptionProduct {
   id: string;
@@ -20,6 +21,7 @@ interface SubscriptionProduct {
   active: boolean;
   created_at: string;
   updated_at: string;
+  image_url?: string;
 }
 
 interface PriceData {
@@ -45,6 +47,7 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    image_url: '',
     active: true,
   });
   const [prices, setPrices] = useState<PriceData[]>([
@@ -63,6 +66,7 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
       setFormData({
         name: product.name,
         description: product.description || '',
+        image_url: product.image_url || '',
         active: product.active,
       });
       fetchExistingPrices(product.id);
@@ -108,6 +112,7 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
           .update({
             name: formData.name,
             description: formData.description || null,
+            image_url: formData.image_url || null,
             active: formData.active,
           })
           .eq('id', product.id);
@@ -119,6 +124,7 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
           .insert({
             name: formData.name,
             description: formData.description || null,
+            image_url: formData.image_url || null,
             active: formData.active,
           })
           .select()
@@ -212,6 +218,12 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
   const updatePrice = (index: number, field: keyof PriceData, value: any) => {
     const updatedPrices = [...prices];
     updatedPrices[index] = { ...updatedPrices[index], [field]: value };
+    
+    // Automatically set interval_count to '1' when interval is 'once'
+    if (field === 'interval' && value === 'once') {
+      updatedPrices[index].interval_count = '1';
+    }
+    
     setPrices(updatedPrices);
   };
 
@@ -252,6 +264,12 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
                 rows={3}
               />
             </div>
+
+            <SubscriptionImageUpload
+              imageUrl={formData.image_url}
+              onImageChange={(url) => setFormData({ ...formData, image_url: url })}
+              disabled={loading}
+            />
 
             <div className="flex items-center space-x-2">
               <Switch
@@ -320,19 +338,21 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
                         <SelectItem value="week">Week</SelectItem>
                         <SelectItem value="month">Month</SelectItem>
                         <SelectItem value="year">Year</SelectItem>
+                        <SelectItem value="once">Once (One-time payment)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Every</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={price.interval_count}
-                      onChange={(e) => updatePrice(index, 'interval_count', e.target.value)}
-                    />
-                  </div>
+                   <div className="space-y-2">
+                     <Label>Every</Label>
+                     <Input
+                       type="number"
+                       min="1"
+                       value={price.interval_count}
+                       onChange={(e) => updatePrice(index, 'interval_count', e.target.value)}
+                       disabled={price.interval === 'once'}
+                     />
+                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

@@ -46,4 +46,5 @@ export interface User {
   role: string;
   phone_number: string | null;
   created_at: string;
+  allocated_subscription_products: string[] | null;
 }

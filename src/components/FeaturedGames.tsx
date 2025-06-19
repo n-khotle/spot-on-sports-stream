@@ -30,7 +30,8 @@ const FeaturedGames = () => {
       .from('games')
       .select('*')
       .eq('status', 'published')
-      .order('created_at', { ascending: false })
+      .eq('featured', false)
+      .order('created_at', { ascending: true })
       .limit(6);
     
     setGames(data || []);

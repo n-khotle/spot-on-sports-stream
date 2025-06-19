@@ -28,6 +28,7 @@ interface SubscriptionProduct {
   active: boolean;
   created_at: string;
   updated_at: string;
+  image_url?: string;
 }
 
 interface SubscriptionPrice {
@@ -173,6 +174,7 @@ const SubscriptionProductTable = ({ onEdit }: SubscriptionProductTableProps) => 
         <TableHeader>
           <TableRow>
             <TableHead>Product</TableHead>
+            <TableHead>Image</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Prices</TableHead>
             <TableHead>Stripe ID</TableHead>
@@ -183,7 +185,7 @@ const SubscriptionProductTable = ({ onEdit }: SubscriptionProductTableProps) => 
         <TableBody>
           {products.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                 No subscription products found. Create your first product to get started.
               </TableCell>
             </TableRow>
@@ -201,6 +203,19 @@ const SubscriptionProductTable = ({ onEdit }: SubscriptionProductTableProps) => 
                     </div>
                   </TableCell>
                   <TableCell>
+                    {product.image_url ? (
+                      <img 
+                        src={product.image_url} 
+                        alt={product.name}
+                        className="w-16 h-12 object-cover rounded border"
+                      />
+                    ) : (
+                      <div className="w-16 h-12 bg-muted rounded border flex items-center justify-center">
+                        <span className="text-xs text-muted-foreground">No image</span>
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <div className="max-w-xs truncate">
                       {product.description || 'No description'}
                     </div>
@@ -211,14 +226,14 @@ const SubscriptionProductTable = ({ onEdit }: SubscriptionProductTableProps) => 
                         <span className="text-sm text-muted-foreground">No prices</span>
                       ) : (
                         productPrices.map((price) => (
-                          <div key={price.id} className="text-sm">
-                            {formatPrice(price.unit_amount, price.currency)}/{price.interval}
-                            {price.nickname && (
-                              <span className="text-muted-foreground ml-1">
-                                ({price.nickname})
-                              </span>
-                            )}
-                          </div>
+                           <div key={price.id} className="text-sm">
+                             {formatPrice(price.unit_amount, price.currency)}{price.interval !== 'once' ? `/${price.interval}` : ''}
+                             {price.nickname && (
+                               <span className="text-muted-foreground ml-1">
+                                 ({price.nickname})
+                               </span>
+                             )}
+                           </div>
                         ))
                       )}
                     </div>

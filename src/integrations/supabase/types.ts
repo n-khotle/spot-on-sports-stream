@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ad_banners: {
+        Row: {
+          click_url: string | null
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          click_url?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          click_url?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           created_at: string
@@ -170,6 +203,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allocated_subscription_products: string[] | null
           created_at: string
           email: string
           full_name: string | null
@@ -180,6 +214,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          allocated_subscription_products?: string[] | null
           created_at?: string
           email: string
           full_name?: string | null
@@ -190,6 +225,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          allocated_subscription_products?: string[] | null
           created_at?: string
           email?: string
           full_name?: string | null
@@ -392,6 +428,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          image_url: string | null
           name: string
           stripe_product_id: string | null
           updated_at: string
@@ -401,6 +438,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           name: string
           stripe_product_id?: string | null
           updated_at?: string
@@ -410,6 +448,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           name?: string
           stripe_product_id?: string | null
           updated_at?: string
@@ -421,6 +460,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      allocate_product_to_user: {
+        Args: { target_user_id: string; product_id: string }
+        Returns: undefined
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -432,6 +475,14 @@ export type Database = {
       make_user_admin: {
         Args: { user_email: string }
         Returns: undefined
+      }
+      remove_product_from_user: {
+        Args: { target_user_id: string; product_id: string }
+        Returns: undefined
+      }
+      user_has_product_access: {
+        Args: { user_id: string; product_id: string }
+        Returns: boolean
       }
     }
     Enums: {

@@ -151,10 +151,6 @@ const News = () => {
                     
                     <div className="flex items-center space-x-4 text-sm text-muted-foreground pt-4">
                       <div className="flex items-center space-x-1">
-                        <User className="w-4 h-4" />
-                        <span>{featuredArticle.author_name}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
                         <span>{format(new Date(featuredArticle.created_at), "MMMM d, yyyy")}</span>
                       </div>
@@ -239,16 +235,12 @@ const News = () => {
                       </p>
                     )}
                     
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center space-x-1">
-                        <User className="w-3 h-3" />
-                        <span>{article.author_name}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="w-3 h-3" />
-                        <span>{format(new Date(article.created_at), "MMM d")}</span>
-                      </div>
-                    </div>
+                     <div className="flex items-center justify-center text-xs text-muted-foreground">
+                       <div className="flex items-center space-x-1">
+                         <Calendar className="w-3 h-3" />
+                         <span>{format(new Date(article.created_at), "MMM d")}</span>
+                       </div>
+                     </div>
                   </CardContent>
                 </Card>
               ))}

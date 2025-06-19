@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar, Clock, Play } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,7 +44,9 @@ const Schedule = () => {
       .from('games')
       .select('*')
       .eq('status', 'published')
-      .order('game_date', { ascending: true });
+      .eq('featured', false)
+      .order('game_date', { ascending: true })
+      .order('game_time', { ascending: true });
     
     setGames(data || []);
     setLoading(false);
@@ -98,70 +100,71 @@ const Schedule = () => {
             <p className="text-muted-foreground text-sm">Check back later for exciting matchups!</p>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {games.map((game) => (
-              <Card key={game.id} className="group hover:shadow-lg transition-all duration-300 border-border/50">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">
-                      {game.title}
-                    </CardTitle>
-                    {game.featured && (
-                      <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-500">
-                        FEATURED
-                      </Badge>
-                    )}
-                  </div>
-                  {game.description && (
-                    <p className="text-muted-foreground text-sm mt-2 line-clamp-2">
-                      {game.description}
-                    </p>
-                  )}
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Game Image */}
-                  {game.featured_image_url && (
-                    <div className="aspect-video rounded-lg overflow-hidden bg-secondary">
-                      <img 
-                        src={game.featured_image_url} 
-                        alt={game.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  )}
-
-                  {/* Date and Time */}
-                  <div className="flex flex-col space-y-2">
-                    {game.game_date && (
-                      <div className="flex items-center space-x-2 text-sm">
-                        <Calendar className="w-4 h-4 text-primary" />
-                        <span className="font-semibold">
-                          {format(new Date(game.game_date), "EEEE, MMMM d")}
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[300px]">Game</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {games.map((game) => (
+                  <TableRow key={game.id} className="hover:bg-muted/50">
+                    <TableCell>
+                       <div className="space-y-1">
+                         <span className="font-semibold">{game.title}</span>
+                         {game.description && (
+                           <p className="text-sm text-muted-foreground line-clamp-1">
+                             {game.description}
+                           </p>
+                         )}
+                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span>
+                          {game.game_date 
+                            ? format(new Date(game.game_date), "MMM d, yyyy")
+                            : "TBD"
+                          }
                         </span>
                       </div>
-                    )}
-                    {game.game_time && (
-                      <div className="flex items-center space-x-2 text-sm">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <span className="font-semibold">
-                          {format(new Date(`2000-01-01T${game.game_time}`), "h:mm a")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span>
+                          {game.game_time 
+                            ? format(new Date(`2000-01-01T${game.game_time}`), "h:mm a")
+                            : "TBD"
+                          }
                         </span>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Action Button */}
-                  <Button 
-                    className="w-full group-hover:bg-primary/90 transition-colors"
-                    onClick={() => handleWatchClick(game)}
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    {game.featured ? "Watch Live" : "Watch"}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                    </TableCell>
+                     <TableCell>
+                       <Badge variant="secondary">
+                         Upcoming
+                       </Badge>
+                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        size="sm"
+                        onClick={() => handleWatchClick(game)}
+                        className="min-w-[80px]"
+                      >
+                        <Play className="w-3 h-3 mr-1" />
+                        Watch
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </main>
