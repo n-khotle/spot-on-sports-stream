@@ -4,6 +4,107 @@
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
 
+.pricing-block-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner-logo {
+  /* margin: auto 58px; */
+  width: 17%;
+}
+
+.banner-price-tournement-logo  {
+  color: #fbc02d;
+  display: flex;
+  align-items: center;
+  width: 51%;
+  padding-left: 8%;
+  justify-content: space-between;
+
+  .price
+  {
+    font-size: 70px;
+    font-weight: 600;
+  }
+  .currency {
+    margin-top: -31px;
+    margin-left: 8px;
+  }
+  
+}
+.banner-payment-options {
+  width: 31%;
+  display: flex;
+  justify-content: center;
+}
+
+.payment-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 500;
+  color: #000;
+}
+
+@media only screen and (max-width: 1023px) {
+  .pricing-block {
+    background: #020a26 !important;
+  }
+
+  .pricing-block-content {
+    flex-direction: column;
+    align-items: normal
+  }
+
+  .banner-logo {
+    border-radius: 0 0 100% 0;
+    width: 30%;
+    background: #fff;
+  }
+  .logo-image {
+    padding: 16px 56px 32px 32px;
+  }
+
+  .banner-price-tournement-logo {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .banner-payment-options {
+    background: #f8be3b;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 12px;
+  }
+}
+
+@media only screen and (max-width: 538px) {
+  .logo-image {
+    padding: 9px 40px 28px 20px;
+  }
+}
+
+@media only screen and (min-width: 1024px) {
+  .logo-image {
+    width: 58%;
+    padding: 0 0 0 8%;
+  }
+
+  .pricing-block {
+    background-image: url(/src/assets/pricing-block.png?t=1750314175970);
+    background-size: cover;
+    background-position: center center;
+    margin-bottom: 52px;
+    height: 150px;
+    display: flex;
+  }
+}
+
+
 @layer base {
   :root {
     --background: 240 10% 3.9%;
@@ -92,6 +193,17 @@
   }
 }
 
+.bold-medium {
+  font-weight: 500;
+  font: 24px;
+  margin-bottom: 8px;
+}
+
+.bold-small {
+  font-weight: 600;
+  font-size: 17px;
+  margin: 16px 0 10px;
+}
 @layer base {
   * {
     @apply border-border;

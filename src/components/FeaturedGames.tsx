@@ -49,6 +49,71 @@ const FeaturedGames = () => {
 
   return (
     <section className="py-12 sm:py-16 bg-background">
+        {/* <div className="pricing-block">
+            <div className="pricing-block-content">
+              <div className="banner-logo">
+                <img 
+                  src={logo} 
+                  alt="logo block"
+                  // width={700}
+                  className="logo-image"
+                />
+              </div>
+              <div className="banner-price-tournement-logo">
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <span className="price">
+                    15
+                  </span>
+                  <span className="currency">
+                    BWP
+                  </span>
+                </div>
+                <div className="logo">
+                  <img 
+                    src={colLogo} 
+                    alt="colLogo block"
+                    width="350"
+                    // className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+              <div className="banner-payment-options">
+                <div className="payment-item orange-money">
+                  <img 
+                    src={colLogo} 
+                    alt="colLogo block"
+                    width="150"
+                    // className="w-full h-full object-contain"
+                  />
+                  <span>
+                    76907936
+                  </span>
+                </div>
+                <div className="payment-item btc-smega">
+                  <img 
+                    src={colLogo} 
+                    alt="colLogo block"
+                    width="150"
+                    // className="w-full h-full object-contain"
+                  />
+                  <span>
+                    75845052
+                  </span>
+                </div>
+                <div className="payment-item mascom-my-zaka">
+                  <img 
+                    src={colLogo} 
+                    alt="colLogo block"
+                    width="150"
+                    // className="w-full h-full object-contain"
+                  />
+                  <span>
+                    75477147
+                  </span>
+                </div>
+              </div>
+            </div>
+        </div> */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">Featured Games</h2>

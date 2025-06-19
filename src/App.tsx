@@ -21,6 +21,7 @@ import TermsOfService from "./pages/TermsOfService";
 import HelpCenter from "./pages/HelpCenter";
 import Live from "./pages/Live";
 import NotFound from "./pages/NotFound";
+import CancellationPolicy from "./pages/CancellationPolicy";
 
 const queryClient = new QueryClient();
 
@@ -87,8 +88,9 @@ const AppContent = () => {
         <Route path="/subscription" element={<Subscription />} />
         <Route path="/news" element={<News />} />
         <Route path="/about-us" element={<AboutUs />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/refund-policy" element={<PrivacyPolicy />} />
+        <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+        <Route path="/terms-and-conditions" element={<TermsOfService />} />
         <Route path="/help-center" element={<HelpCenter />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/payment-settings" element={<PaymentSettings />} />
