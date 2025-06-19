@@ -44,6 +44,7 @@ const Schedule = () => {
       .from('games')
       .select('*')
       .eq('status', 'published')
+      .eq('featured', false)
       .order('game_date', { ascending: true })
       .order('game_time', { ascending: true });
     
