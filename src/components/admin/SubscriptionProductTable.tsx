@@ -28,6 +28,7 @@ interface SubscriptionProduct {
   active: boolean;
   created_at: string;
   updated_at: string;
+  image_url?: string;
 }
 
 interface SubscriptionPrice {
@@ -193,10 +194,19 @@ const SubscriptionProductTable = ({ onEdit }: SubscriptionProductTableProps) => 
               return (
                 <TableRow key={product.id}>
                   <TableCell>
-                    <div>
-                      <div className="font-medium">{product.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        Created {new Date(product.created_at).toLocaleDateString()}
+                    <div className="flex items-center space-x-3">
+                      {product.image_url && (
+                        <img 
+                          src={product.image_url} 
+                          alt={product.name}
+                          className="w-12 h-12 object-cover rounded-md"
+                        />
+                      )}
+                      <div>
+                        <div className="font-medium">{product.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Created {new Date(product.created_at).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
                   </TableCell>

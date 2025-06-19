@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2, X } from 'lucide-react';
+import SubscriptionImageUpload from './SubscriptionImageUpload';
 
 interface SubscriptionProduct {
   id: string;
@@ -20,6 +21,7 @@ interface SubscriptionProduct {
   active: boolean;
   created_at: string;
   updated_at: string;
+  image_url?: string;
 }
 
 interface PriceData {
@@ -45,6 +47,7 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    image_url: '',
     active: true,
   });
   const [prices, setPrices] = useState<PriceData[]>([
@@ -63,6 +66,7 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
       setFormData({
         name: product.name,
         description: product.description || '',
+        image_url: product.image_url || '',
         active: product.active,
       });
       fetchExistingPrices(product.id);
@@ -108,6 +112,7 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
           .update({
             name: formData.name,
             description: formData.description || null,
+            image_url: formData.image_url || null,
             active: formData.active,
           })
           .eq('id', product.id);
@@ -119,6 +124,7 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
           .insert({
             name: formData.name,
             description: formData.description || null,
+            image_url: formData.image_url || null,
             active: formData.active,
           })
           .select()
@@ -258,6 +264,12 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
                 rows={3}
               />
             </div>
+
+            <SubscriptionImageUpload
+              imageUrl={formData.image_url}
+              onImageChange={(url) => setFormData({ ...formData, image_url: url })}
+              disabled={loading}
+            />
 
             <div className="flex items-center space-x-2">
               <Switch
