@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import GameCard from "./GameCard";
-import pricing from "../assets/pricing-block.png"
-import logo from "../assets/logo-color.png"
-import colLogo from "../assets/COL-logo.png"
 
 interface Game {
   id: string;
@@ -52,7 +49,7 @@ const FeaturedGames = () => {
 
   return (
     <section className="py-12 sm:py-16 bg-background">
-        <div className="pricing-block">
+        {/* <div className="pricing-block">
             <div className="pricing-block-content">
               <div className="banner-logo">
                 <img 
@@ -116,7 +113,7 @@ const FeaturedGames = () => {
                 </div>
               </div>
             </div>
-        </div>
+        </div> */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">Featured Games</h2>
