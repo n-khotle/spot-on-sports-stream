@@ -2,91 +2,125 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Upload, X } from "lucide-react";
 
 interface BannerImageUploadProps {
-  onImageUrlChange: (url: string) => void;
+  onImageUploaded: (url: string) => void;
   currentImageUrl?: string;
 }
 
-const BannerImageUpload = ({ onImageUrlChange, currentImageUrl }: BannerImageUploadProps) => {
-  const [imageUrl, setImageUrl] = useState(currentImageUrl || "");
-  const [isValidUrl, setIsValidUrl] = useState(!!currentImageUrl);
+const BannerImageUpload = ({ onImageUploaded, currentImageUrl }: BannerImageUploadProps) => {
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
   const { toast } = useToast();
 
-  const handleUrlChange = (url: string) => {
-    setImageUrl(url);
-    
-    if (!url) {
-      setIsValidUrl(false);
-      onImageUrlChange("");
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Please select an image file",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Simple URL validation
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "Image must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
     try {
-      new URL(url);
-      setIsValidUrl(true);
-      onImageUrlChange(url);
-    } catch {
-      setIsValidUrl(false);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error } = await supabase.storage
+        .from('banners')
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data } = supabase.storage
+        .from('banners')
+        .getPublicUrl(filePath);
+
+      setPreviewUrl(data.publicUrl);
+      onImageUploaded(data.publicUrl);
+      
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
-  const handleImageError = () => {
-    setIsValidUrl(false);
-    toast({
-      title: "Invalid Image URL",
-      description: "Please provide a valid image URL",
-      variant: "destructive",
-    });
-  };
-
-  const clearImage = () => {
-    setImageUrl("");
-    setIsValidUrl(false);
-    onImageUrlChange("");
+  const removeImage = () => {
+    setPreviewUrl(null);
+    onImageUploaded('');
   };
 
   return (
     <div className="space-y-4">
-      <div>
-        <Label htmlFor="imageUrl">Banner Image URL</Label>
-        <div className="flex space-x-2 mt-2">
-          <Input
-            id="imageUrl"
-            type="url"
-            placeholder="https://example.com/banner-image.jpg"
-            value={imageUrl}
-            onChange={(e) => handleUrlChange(e.target.value)}
-          />
-          {imageUrl && (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={clearImage}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground mt-1">
-          Recommended size: 1200x300px or similar banner dimensions
-        </p>
-      </div>
-
-      {imageUrl && isValidUrl && (
-        <div className="border border-border rounded-lg overflow-hidden">
+      <Label>Banner Image</Label>
+      
+      {previewUrl ? (
+        <div className="relative">
           <img
-            src={imageUrl}
+            src={previewUrl}
             alt="Banner preview"
-            className="w-full h-32 object-cover"
-            onError={handleImageError}
-            onLoad={() => setIsValidUrl(true)}
+            className="w-full h-32 object-cover rounded-lg border"
+          />
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            className="absolute top-2 right-2"
+            onClick={removeImage}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      ) : (
+        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+          <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground mb-2">
+            Upload a banner image (max 5MB)
+          </p>
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={handleFileUpload}
+            disabled={uploading}
+            className="max-w-xs mx-auto"
           />
         </div>
+      )}
+      
+      {uploading && (
+        <p className="text-sm text-muted-foreground text-center">
+          Uploading image...
+        </p>
       )}
     </div>
   );
