@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { UserPlus } from 'lucide-react';
 import PasswordStrengthIndicator from '@/components/PasswordStrengthIndicator';
+import ReCAPTCHA from 'react-google-recaptcha';
+import { RECAPTCHA_SITE_KEY } from '@/config/recaptcha';
 
 interface SignUpFormProps {
   onSuccess?: () => void;
@@ -20,6 +21,8 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
   const [error, setError] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const validatePasswordMatch = () => {
     return signupPassword === confirmPassword;
@@ -38,10 +41,26 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
     return score >= 3; // Require at least medium strength
   };
 
+  const handleRecaptchaChange = (token: string | null) => {
+    setRecaptchaToken(token);
+  };
+
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    // Validate reCAPTCHA
+    if (!recaptchaToken) {
+      setError('Please complete the reCAPTCHA verification');
+      toast({
+        title: "Error",
+        description: "Please complete the reCAPTCHA verification",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
@@ -57,6 +76,9 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         description: "Password must be at least medium strength",
         variant: "destructive",
       });
+      // Reset reCAPTCHA
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
       setIsLoading(false);
       return;
     }
@@ -69,6 +91,9 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         description: "Passwords do not match",
         variant: "destructive",
       });
+      // Reset reCAPTCHA
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
       setIsLoading(false);
       return;
     }
@@ -82,6 +107,9 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         description: error.message,
         variant: "destructive",
       });
+      // Reset reCAPTCHA on error
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     } else {
       toast({
         title: "Success",
@@ -156,12 +184,22 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         )}
       </div>
 
+      {/* reCAPTCHA */}
+      <div className="flex justify-center">
+        <ReCAPTCHA
+          ref={recaptchaRef}
+          sitekey={RECAPTCHA_SITE_KEY}
+          onChange={handleRecaptchaChange}
+          theme="light"
+        />
+      </div>
+
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="w-full" disabled={isLoading || !recaptchaToken}>
         {isLoading ? (
           <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
         ) : (
