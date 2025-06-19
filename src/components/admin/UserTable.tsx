@@ -15,6 +15,12 @@ interface User {
   role: string;
   phone_number: string | null;
   created_at: string;
+  allocated_subscription_products: string[] | null;
+}
+
+interface SubscriptionProduct {
+  id: string;
+  name: string;
 }
 
 interface UserTableProps {
@@ -26,9 +32,11 @@ const UserTable = ({ onEditUser, onUsersUpdated }: UserTableProps) => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [subscriptionProducts, setSubscriptionProducts] = useState<SubscriptionProduct[]>([]);
 
   useEffect(() => {
     fetchUsers();
+    fetchSubscriptionProducts();
   }, []);
 
   const fetchUsers = async () => {
@@ -49,6 +57,27 @@ const UserTable = ({ onEditUser, onUsersUpdated }: UserTableProps) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fetchSubscriptionProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_products')
+        .select('id, name')
+        .eq('active', true);
+
+      if (error) throw error;
+      setSubscriptionProducts(data || []);
+    } catch (error: any) {
+      console.error('Error fetching subscription products:', error);
+    }
+  };
+
+  const getProductNames = (productIds: string[] | null) => {
+    if (!productIds || productIds.length === 0) return [];
+    return subscriptionProducts
+      .filter(product => productIds.includes(product.id))
+      .map(product => product.name);
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -108,6 +137,7 @@ const UserTable = ({ onEditUser, onUsersUpdated }: UserTableProps) => {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Allocated Products</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -116,26 +146,41 @@ const UserTable = ({ onEditUser, onUsersUpdated }: UserTableProps) => {
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No users found
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.full_name || 'N/A'}
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{user.phone_number || 'N/A'}</TableCell>
-                    <TableCell>
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </TableCell>
+                users.map((user) => {
+                  const allocatedProductNames = getProductNames(user.allocated_subscription_products);
+                  return (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
+                        {user.full_name || 'N/A'}
+                      </TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {allocatedProductNames.length === 0 ? (
+                            <span className="text-muted-foreground text-sm">None</span>
+                          ) : (
+                            allocatedProductNames.map((productName, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {productName}
+                              </Badge>
+                            ))
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{user.phone_number || 'N/A'}</TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
                         <Button
@@ -154,9 +199,10 @@ const UserTable = ({ onEditUser, onUsersUpdated }: UserTableProps) => {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
