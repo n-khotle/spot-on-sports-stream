@@ -154,98 +154,101 @@ const Live = () => {
     );
   }
 
-  // Show live stream for users with access
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="space-y-6">
-          {/* Stream Header */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold">Live Stream</h1>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Users className="w-4 h-4" />
-                  <span>1,234 viewers</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>Live Now</span>
+  if (hasAccess) {
+    // Show live stream
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        
+        <main className="container mx-auto px-4 py-8">
+          <div className="space-y-6">
+            {/* Stream Header */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold">Live Stream</h1>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Users className="w-4 h-4" />
+                    <span>1,234 viewers</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    <span>Live Now</span>
+                  </div>
                 </div>
               </div>
+              <Badge variant="destructive" className="bg-red-600">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
+                LIVE
+              </Badge>
             </div>
-            <Badge variant="destructive" className="bg-red-600">
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
-              LIVE
-            </Badge>
-          </div>
-
-          {/* Video Player */}
-          <div className="space-y-4">
-            {streamingSettings ? (
-              <VideoPlayer
-                src={streamingSettings.hls_url || streamingSettings.stream_url}
-                poster={streamingSettings.thumbnail_url}
-                isLive={true}
-                hasAccess={hasAccess}
-                className="w-full aspect-video bg-black rounded-lg"
-              />
-            ) : (
-              <div className="aspect-video bg-secondary rounded-lg flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                    <Play className="w-8 h-8 text-primary" />
+  
+            {/* Video Player */}
+            <div className="space-y-4">
+              {streamingSettings ? (
+                <VideoPlayer
+                  src={streamingSettings.hls_url || streamingSettings.stream_url}
+                  poster={streamingSettings.thumbnail_url}
+                  autoPlay={true}
+                  controls={true}
+                  isLive={true}
+                  className="w-full aspect-video bg-black rounded-lg"
+                />
+              ) : (
+                <div className="aspect-video bg-secondary rounded-lg flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                      <Play className="w-8 h-8 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">Stream Preparing</h3>
+                      <p className="text-sm text-muted-foreground">
+                        The live stream will begin shortly. Please wait...
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+  
+            {/* Stream Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Stream Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold">Your Access Level</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {subscribed ? "Subscription Access" : "One-time Purchase Access"}
+                    </p>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">Stream Preparing</h3>
+                    <h4 className="font-semibold">Stream Quality</h4>
                     <p className="text-sm text-muted-foreground">
-                      The live stream will begin shortly. Please wait...
+                      {streamingSettings?.resolution || "HD 1080p"}
                     </p>
                   </div>
                 </div>
-              </div>
-            )}
+                
+                {streamingSettings?.description && (
+                  <div>
+                    <h4 className="font-semibold">About This Stream</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {streamingSettings.description}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
-
-          {/* Stream Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Stream Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold">Your Access Level</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {subscribed ? "Subscription Access" : "One-time Purchase Access"}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Stream Quality</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {streamingSettings?.resolution || "HD 1080p"}
-                  </p>
-                </div>
-              </div>
-              
-              {streamingSettings?.description && (
-                <div>
-                  <h4 className="font-semibold">About This Stream</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {streamingSettings.description}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
-  );
+        </main>
+  
+        <Footer />
+      </div>
+    );
+  }
 };
 
 export default Live;
