@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +8,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Crown, Star } from "lucide-react";
+import { CheckCircle, Crown, Star, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SubscriptionPrice {
@@ -40,6 +39,7 @@ const Subscription = () => {
   const [products, setProducts] = useState<SubscriptionProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -51,6 +51,23 @@ const Subscription = () => {
       fetchSubscriptionProducts();
     }
   }, [user, authLoading, navigate]);
+
+  // Auto-refresh when window gains focus (user returns from admin panel)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (subscribing) {
+        // Small delay to allow Stripe redirect to complete
+        setTimeout(() => {
+          setSubscribing(null);
+        }, 1000);
+      }
+      // Refresh products when window gains focus
+      fetchSubscriptionProducts();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [subscribing]);
 
   // Auto-reset processing state after 5 seconds (reduced from 10)
   useEffect(() => {
@@ -67,21 +84,6 @@ const Subscription = () => {
       return () => clearTimeout(timeout);
     }
   }, [subscribing, toast]);
-
-  // Reset processing state when user returns to the tab
-  useEffect(() => {
-    const handleFocus = () => {
-      if (subscribing) {
-        // Small delay to allow Stripe redirect to complete
-        setTimeout(() => {
-          setSubscribing(null);
-        }, 1000);
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [subscribing]);
 
   const fetchSubscriptionProducts = async () => {
     try {
@@ -111,6 +113,16 @@ const Subscription = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchSubscriptionProducts();
+    setRefreshing(false);
+    toast({
+      title: "Refreshed",
+      description: "Subscription plans have been updated",
+    });
   };
 
   const handleSubscribe = async (priceId: string) => {
@@ -197,11 +209,23 @@ const Subscription = () => {
       
       <main className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h1 className="text-4xl lg:text-6xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-              Choose Your Plan
-            </span>
-          </h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <h1 className="text-4xl lg:text-6xl font-bold">
+              <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                Choose Your Plan
+              </span>
+            </h1>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="ml-4"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Get unlimited access to live streams, exclusive content, and premium features.
           </p>
@@ -266,9 +290,16 @@ const Subscription = () => {
                           ? "Opening checkout..."
                           : subscribed
                           ? "Change Plan"
+                          : !price.stripe_price_id
+                          ? "Not Available"
                           : "Subscribe Now"
                         }
                       </Button>
+                      {!price.stripe_price_id && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          This plan needs to be synced with Stripe first
+                        </p>
+                      )}
                     </div>
                   ))}
                 </CardContent>
