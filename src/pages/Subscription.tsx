@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,17 +52,17 @@ const Subscription = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Auto-reset processing state after 10 seconds
+  // Auto-reset processing state after 5 seconds (reduced from 10)
   useEffect(() => {
     if (subscribing) {
       const timeout = setTimeout(() => {
         setSubscribing(null);
         toast({
-          title: "Checkout Timeout",
-          description: "Please try again if the checkout didn't open properly.",
+          title: "Checkout Ready",
+          description: "You can try again if the checkout didn't open properly.",
           variant: "default",
         });
-      }, 10000);
+      }, 5000);
 
       return () => clearTimeout(timeout);
     }
@@ -137,8 +138,8 @@ const Subscription = () => {
       }
 
       if (data?.url) {
-        // Reset processing state immediately after opening Stripe
-        setTimeout(() => setSubscribing(null), 2000);
+        // Reset processing state immediately after opening Stripe (reduced delay)
+        setTimeout(() => setSubscribing(null), 1500);
         window.open(data.url, "_blank");
         
         toast({
@@ -258,7 +259,7 @@ const Subscription = () => {
                       <Button
                         className="w-full"
                         onClick={() => price.stripe_price_id && handleSubscribe(price.stripe_price_id)}
-                        disabled={!price.stripe_price_id || subscribing === price.stripe_price_id || subLoading}
+                        disabled={!price.stripe_price_id || subLoading}
                       >
                         {subscribing === price.stripe_price_id
                           ? "Opening checkout..."
