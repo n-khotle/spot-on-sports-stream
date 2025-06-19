@@ -126,7 +126,10 @@ const UserForm = ({ editingUser, onUserSaved, onCancel }: UserFormProps) => {
         description: "User updated successfully",
       });
 
-      onUserSaved();
+      // Force a small delay to ensure DB is updated
+      setTimeout(() => {
+        onUserSaved();
+      }, 100);
     } catch (error: any) {
       toast({
         title: "Error",

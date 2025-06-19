@@ -36,18 +36,21 @@ const UserTable = ({ onEditUser, onUsersUpdated, refreshKey }: UserTableProps) =
   const [subscriptionProducts, setSubscriptionProducts] = useState<SubscriptionProduct[]>([]);
 
   useEffect(() => {
+    console.log('UserTable refreshKey changed:', refreshKey);
     fetchUsers();
     fetchSubscriptionProducts();
   }, [refreshKey]);
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users...');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('Users fetched:', data?.length, data);
       setUsers(data || []);
     } catch (error: any) {
       toast({
