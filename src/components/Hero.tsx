@@ -88,8 +88,8 @@ const Hero = ({ featuredGame }: HeroProps) => {
             alt={featuredGame.title}
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-background/95"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-background/50"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-background/75 via-background/50 to-background/75"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-background/30"></div>
         </div>
       )}
       
