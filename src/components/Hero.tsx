@@ -28,9 +28,10 @@ interface HeroProps {
 
 const Hero = ({ featuredGame }: HeroProps) => {
   const { user } = useAuth();
-  const { subscribed } = useSubscription();
+  const { subscribed, loading } = useSubscription();
   const navigate = useNavigate();
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
   // Function to check if a game is currently live
   const isGameLive = (game: FeaturedGame | null) => {
     if (!game?.game_date || !game?.game_time) return false;
@@ -73,8 +74,26 @@ const Hero = ({ featuredGame }: HeroProps) => {
       return;
     }
 
-    // Otherwise, show payment modal
+    // If user is not logged in, redirect to auth page first
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    // If user is logged in but doesn't have subscription, show payment modal
     setPaymentModalOpen(true);
+  };
+
+  const getButtonText = () => {
+    if (loading) return "Loading...";
+    if (!user) return "Sign In to Watch";
+    if (user && !subscribed) return "Subscribe to Watch Live";
+    return "Watch Live";
+  };
+
+  const getButtonVariant = () => {
+    if (!user || (user && !subscribed)) return "default";
+    return "default";
   };
 
   const liveStatus = getLiveStatus();
@@ -88,8 +107,8 @@ const Hero = ({ featuredGame }: HeroProps) => {
             alt={featuredGame.title}
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/75 via-background/50 to-background/75"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-background/30"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-background/55 via-background/30 to-background/55"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-background/10"></div>
         </div>
       )}
       
@@ -197,19 +216,21 @@ const Hero = ({ featuredGame }: HeroProps) => {
                 <>
                   <Button 
                     size="lg" 
+                    variant={getButtonVariant()}
                     className="text-base sm:text-lg px-8 sm:px-10 py-3 sm:py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 group min-h-[44px]"
                     onClick={handleWatchClick}
+                    disabled={loading}
                   >
                     <Play className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 fill-current group-hover:scale-110 transition-transform" />
-                    Watch Live
+                    {getButtonText()}
                   </Button>
                   <Button variant="outline" size="lg" className="text-base sm:text-lg px-8 sm:px-10 py-3 sm:py-4 border-2 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 min-h-[44px]" asChild>
                     <Link to="/about-us">Learn More</Link>
                   </Button>
                 </>
               ) : (
-                <Button variant="outline" size="lg" className="text-base sm:text-lg px-8 sm:px-10 py-3 sm:py-4 border-2 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 min-h-[44px]">
-                  View All Games
+                <Button variant="outline" size="lg" className="text-base sm:text-lg px-8 sm:px-10 py-3 sm:py-4 border-2 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 min-h-[44px]" asChild>
+                  <Link to="/schedule">View All Games</Link>
                 </Button>
               )}
             </div>
