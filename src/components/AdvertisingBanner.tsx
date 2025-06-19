@@ -75,7 +75,7 @@ const AdvertisingBanner = () => {
             <div className="bg-gradient-to-r from-secondary to-secondary/50">
               <img 
                 src={currentBanner.image_url}
-                alt={currentBanner.title}
+                alt=""
                 className="w-full h-auto object-contain"
                 loading="lazy"
               />
@@ -84,14 +84,6 @@ const AdvertisingBanner = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-background/20 via-transparent to-background/20"></div>
             </div>
 
-            {/* Optional overlay content */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="bg-background/90 backdrop-blur-sm rounded-lg px-4 py-2 border border-border/20">
-                <span className="text-sm font-medium text-foreground">
-                  {currentBanner.click_url && currentBanner.click_url !== "#" ? "Click to learn more" : currentBanner.title}
-                </span>
-              </div>
-            </div>
           </div>
 
           {/* Banner Indicators */}
@@ -106,7 +98,6 @@ const AdvertisingBanner = () => {
                       : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
                   }`}
                   onClick={() => setCurrentBannerIndex(index)}
-                  aria-label={`Go to banner ${index + 1}`}
                 />
               ))}
             </div>
