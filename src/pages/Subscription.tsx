@@ -138,14 +138,15 @@ const Subscription = () => {
       }
 
       if (data?.url) {
-        // Reset processing state immediately after opening Stripe (reduced delay)
-        setTimeout(() => setSubscribing(null), 1500);
         window.open(data.url, "_blank");
         
         toast({
           title: "Redirecting to Checkout",
           description: "Please complete your payment in the new tab.",
         });
+        
+        // Reset subscribing state after a short delay
+        setTimeout(() => setSubscribing(null), 2000);
       } else {
         throw new Error("No checkout URL received");
       }
@@ -259,7 +260,7 @@ const Subscription = () => {
                       <Button
                         className="w-full"
                         onClick={() => price.stripe_price_id && handleSubscribe(price.stripe_price_id)}
-                        disabled={!price.stripe_price_id || subLoading}
+                        disabled={!price.stripe_price_id || subscribing === price.stripe_price_id}
                       >
                         {subscribing === price.stripe_price_id
                           ? "Opening checkout..."
