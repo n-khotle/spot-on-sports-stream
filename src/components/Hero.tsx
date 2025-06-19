@@ -28,7 +28,7 @@ interface HeroProps {
 }
 
 const Hero = ({ featuredGame }: HeroProps) => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { subscribed, loading } = useSubscription();
   const navigate = useNavigate();
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -42,16 +42,6 @@ const Hero = ({ featuredGame }: HeroProps) => {
     const gameEndTime = new Date(gameDateTime.getTime() + 3 * 60 * 60 * 1000); // Assume 3 hours duration
     
     return now >= gameDateTime && now <= gameEndTime;
-  };
-
-  // Check if user has access (subscription or allocated products)
-  const hasAccess = () => {
-    if (!user) return false;
-    if (subscribed) return true;
-    if (profile?.allocated_subscription_products && profile.allocated_subscription_products.length > 0) {
-      return true;
-    }
-    return false;
   };
 
   const getLiveStatus = () => {
@@ -79,26 +69,19 @@ const Hero = ({ featuredGame }: HeroProps) => {
   };
 
   const handleWatchClick = () => {
-    if (!user) {
-      // Redirect to auth page if not logged in
-      navigate('/auth');
+    // If user is logged in, go to Live page
+    if (user) {
+      navigate('/live');
       return;
     }
 
-    if (!hasAccess()) {
-      // Redirect to subscription page if user doesn't have access
-      navigate('/subscription');
-      return;
-    }
-
-    // If user has access, go to Live page
-    navigate('/live');
+    // If user is not logged in, redirect to packages page
+    navigate('/subscription');
   };
 
   const getButtonText = () => {
     if (loading) return "Loading...";
     if (!user) return "Sign In to Watch";
-    if (!hasAccess()) return "Get Access to Watch";
     return "Watch Live";
   };
 

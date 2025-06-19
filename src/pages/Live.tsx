@@ -22,17 +22,10 @@ const Live = () => {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [streamingSettings, setStreamingSettings] = useState<any>(null);
 
-  // STRICT access check - ALL users must have subscription OR allocated products
+  // Check if user has access through product allocation or subscription
   useEffect(() => {
     const checkAccess = async () => {
-      console.log('Checking access for user:', user?.email);
-      console.log('User role:', profile?.role);
-      console.log('Subscribed:', subscribed);
-      console.log('Allocated products:', profile?.allocated_subscription_products);
-      
       if (!user || authLoading) {
-        console.log('No user or still loading auth');
-        setHasAccess(false);
         setCheckingAccess(false);
         return;
       }
@@ -40,7 +33,6 @@ const Live = () => {
       try {
         // Check if user has subscription access
         if (subscribed) {
-          console.log('User has active subscription - access granted');
           setHasAccess(true);
           setCheckingAccess(false);
           return;
@@ -48,14 +40,12 @@ const Live = () => {
 
         // Check if user has allocated products (for one-time purchases)
         if (profile?.allocated_subscription_products && profile.allocated_subscription_products.length > 0) {
-          console.log('User has allocated products - access granted');
           setHasAccess(true);
           setCheckingAccess(false);
           return;
         }
 
-        // If no access found - EVEN FOR ADMINS
-        console.log('User has no valid access - access denied (including admins)');
+        // If no access found
         setHasAccess(false);
         setCheckingAccess(false);
       } catch (error) {
@@ -68,17 +58,9 @@ const Live = () => {
     checkAccess();
   }, [user, subscribed, profile, authLoading]);
 
-  // Only fetch streaming settings if user has access
+  // Fetch streaming settings
   useEffect(() => {
     const fetchStreamingSettings = async () => {
-      // Don't fetch streaming settings if user doesn't have access
-      if (!hasAccess) {
-        console.log('Not fetching streaming settings - user has no access');
-        setStreamingSettings(null);
-        return;
-      }
-
-      console.log('Fetching streaming settings for authorized user');
       try {
         const { data, error } = await supabase
           .from('streaming_settings')
@@ -91,18 +73,16 @@ const Live = () => {
           return;
         }
 
-        console.log('Streaming settings fetched:', data);
         setStreamingSettings(data);
       } catch (error) {
         console.error('Error fetching streaming settings:', error);
       }
     };
 
-    // Only fetch if we're not checking access and we know the access status
-    if (!checkingAccess) {
+    if (hasAccess) {
       fetchStreamingSettings();
     }
-  }, [hasAccess, checkingAccess]);
+  }, [hasAccess]);
 
   const handleGetAccess = () => {
     navigate('/subscription');
@@ -128,7 +108,7 @@ const Live = () => {
     );
   }
 
-  // Show access required message for users without login or payment
+  // Show access required message
   if (!user || !hasAccess) {
     return (
       <div className="min-h-screen bg-background">
@@ -143,9 +123,7 @@ const Live = () => {
               <p className="text-lg text-muted-foreground">
                 {!user 
                   ? "Please sign in and purchase access to watch the live stream."
-                  : profile?.role === 'admin' 
-                    ? "Even as an admin, you need to purchase access or have an active subscription to watch the live stream."
-                    : "You need to purchase access or have an active subscription to watch the live stream."
+                  : "You need to purchase access or have an active subscription to watch the live stream."
                 }
               </p>
             </div>
@@ -177,105 +155,98 @@ const Live = () => {
     );
   }
 
-  // Only show live stream content if user has verified access
-  if (hasAccess) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        
-        <main className="container mx-auto px-4 py-8">
-          <div className="space-y-6">
-            {/* Stream Header */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold">Live Stream</h1>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    <span>1,234 viewers</span>
+  // Show live stream
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      <main className="container mx-auto px-4 py-8">
+        <div className="space-y-6">
+          {/* Stream Header */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold">Live Stream</h1>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  <span>1,234 viewers</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>Live Now</span>
+                </div>
+              </div>
+            </div>
+            <Badge variant="destructive" className="bg-red-600">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
+              LIVE
+            </Badge>
+          </div>
+
+          {/* Video Player */}
+          <div className="space-y-4">
+            {streamingSettings ? (
+              <VideoPlayer
+                src={streamingSettings.hls_url || streamingSettings.stream_url}
+                poster={streamingSettings.thumbnail_url}
+                autoPlay={true}
+                controls={true}
+                className="w-full aspect-video bg-black rounded-lg"
+              />
+            ) : (
+              <div className="aspect-video bg-secondary rounded-lg flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                    <Play className="w-8 h-8 text-primary" />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>Live Now</span>
+                  <div>
+                    <h3 className="text-lg font-semibold">Stream Preparing</h3>
+                    <p className="text-sm text-muted-foreground">
+                      The live stream will begin shortly. Please wait...
+                    </p>
                   </div>
                 </div>
               </div>
-              <Badge variant="destructive" className="bg-red-600">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse mr-2"></div>
-                LIVE
-              </Badge>
-            </div>
-  
-            {/* Video Player - Only show if user has access and streaming settings exist */}
-            <div className="space-y-4">
-              {streamingSettings ? (
-                <VideoPlayer
-                  src={streamingSettings.hls_url || streamingSettings.stream_url}
-                  poster={streamingSettings.thumbnail_url}
-                  autoPlay={true}
-                  controls={true}
-                  isLive={true}
-                  hasAccess={hasAccess}
-                  className="w-full aspect-video bg-black rounded-lg"
-                />
-              ) : (
-                <div className="aspect-video bg-secondary rounded-lg flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                      <Play className="w-8 h-8 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold">Stream Preparing</h3>
-                      <p className="text-sm text-muted-foreground">
-                        The live stream will begin shortly. Please wait...
-                      </p>
-                    </div>
-                  </div>
+            )}
+          </div>
+
+          {/* Stream Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Stream Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold">Your Access Level</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {subscribed ? "Subscription Access" : "One-time Purchase Access"}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Stream Quality</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {streamingSettings?.resolution || "HD 1080p"}
+                  </p>
+                </div>
+              </div>
+              
+              {streamingSettings?.description && (
+                <div>
+                  <h4 className="font-semibold">About This Stream</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {streamingSettings.description}
+                  </p>
                 </div>
               )}
-            </div>
-  
-            {/* Stream Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Stream Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-semibold">Your Access Level</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {subscribed ? "Subscription Access" : "One-time Purchase Access"}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Stream Quality</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {streamingSettings?.resolution || "HD 1080p"}
-                    </p>
-                  </div>
-                </div>
-                
-                {streamingSettings?.description && (
-                  <div>
-                    <h4 className="font-semibold">About This Stream</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {streamingSettings.description}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-  
-        <Footer />
-      </div>
-    );
-  }
+            </CardContent>
+          </Card>
+        </div>
+      </main>
 
-  // Fallback - should not reach here
-  return null;
+      <Footer />
+    </div>
+  );
 };
 
 export default Live;
