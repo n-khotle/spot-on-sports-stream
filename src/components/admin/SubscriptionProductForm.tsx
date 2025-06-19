@@ -212,6 +212,12 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
   const updatePrice = (index: number, field: keyof PriceData, value: any) => {
     const updatedPrices = [...prices];
     updatedPrices[index] = { ...updatedPrices[index], [field]: value };
+    
+    // Automatically set interval_count to '1' when interval is 'once'
+    if (field === 'interval' && value === 'once') {
+      updatedPrices[index].interval_count = '1';
+    }
+    
     setPrices(updatedPrices);
   };
 
@@ -320,19 +326,21 @@ const SubscriptionProductForm = ({ product, onClose, onSuccess }: SubscriptionPr
                         <SelectItem value="week">Week</SelectItem>
                         <SelectItem value="month">Month</SelectItem>
                         <SelectItem value="year">Year</SelectItem>
+                        <SelectItem value="once">Once (One-time payment)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Every</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={price.interval_count}
-                      onChange={(e) => updatePrice(index, 'interval_count', e.target.value)}
-                    />
-                  </div>
+                   <div className="space-y-2">
+                     <Label>Every</Label>
+                     <Input
+                       type="number"
+                       min="1"
+                       value={price.interval_count}
+                       onChange={(e) => updatePrice(index, 'interval_count', e.target.value)}
+                       disabled={price.interval === 'once'}
+                     />
+                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

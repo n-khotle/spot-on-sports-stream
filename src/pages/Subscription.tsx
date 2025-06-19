@@ -122,7 +122,7 @@ const Subscription = () => {
       style: 'currency',
       currency: currency.toUpperCase(),
     });
-    return `${price}/${interval}`;
+    return interval === 'once' ? price : `${price}/${interval}`;
   };
 
   const getProductIcon = (name: string) => {

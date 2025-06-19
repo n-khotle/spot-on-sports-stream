@@ -211,14 +211,14 @@ const SubscriptionProductTable = ({ onEdit }: SubscriptionProductTableProps) => 
                         <span className="text-sm text-muted-foreground">No prices</span>
                       ) : (
                         productPrices.map((price) => (
-                          <div key={price.id} className="text-sm">
-                            {formatPrice(price.unit_amount, price.currency)}/{price.interval}
-                            {price.nickname && (
-                              <span className="text-muted-foreground ml-1">
-                                ({price.nickname})
-                              </span>
-                            )}
-                          </div>
+                           <div key={price.id} className="text-sm">
+                             {formatPrice(price.unit_amount, price.currency)}{price.interval !== 'once' ? `/${price.interval}` : ''}
+                             {price.nickname && (
+                               <span className="text-muted-foreground ml-1">
+                                 ({price.nickname})
+                               </span>
+                             )}
+                           </div>
                         ))
                       )}
                     </div>
