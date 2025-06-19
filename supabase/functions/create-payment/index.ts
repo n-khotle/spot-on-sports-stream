@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -19,45 +18,74 @@ serve(async (req) => {
   );
 
   try {
-    const { gameId, amount, currency = "bwp" } = await req.json();
+    const { gameId, amount = 1500, currency = "bwp" } = await req.json(); // Default P15.00 BWP
     
-    // Try to get authenticated user, but allow guest payments
+    // Use the amount directly since it's already in the correct currency
+    let finalAmount = amount;
+    if (currency === "usd" && amount === 1500) {
+      // Convert BWP 15 to USD (BWP 15 ≈ $1.15)
+      finalAmount = 115; // $1.15 in cents
+    }
+    
+    // Handle guest users
     let user = null;
+    let userEmail = "guest@example.com";
+    
     const authHeader = req.headers.get("Authorization");
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
       const { data } = await supabaseClient.auth.getUser(token);
       user = data.user;
+      if (user?.email) {
+        userEmail = user.email;
+      }
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
     
-    // Check if customer exists for authenticated users
+    // Check if customer exists
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
     let customerId;
-    if (user?.email) {
-      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-      if (customers.data.length > 0) {
-        customerId = customers.data[0].id;
-      }
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
     }
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : (user?.email || "guest@example.com"),
+      customer_email: customerId ? undefined : userEmail,
       line_items: [
         {
-          price_data: {
-            currency: currency,
-            product_data: { name: "Single Game Access" },
-            unit_amount: amount,
-          },
+        price_data: {
+          currency: currency,
+          product_data: { name: "Game Access - One-Time Purchase" },
+          unit_amount: finalAmount,
+        },
           quantity: 1,
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/payment-success`,
-      cancel_url: `${req.headers.get("origin")}/payment-cancelled`,
+      success_url: `${req.headers.get("origin")}/live`,
+      cancel_url: `${req.headers.get("origin")}/`,
     });
+
+    // Record the order if user is authenticated
+    if (user) {
+      const supabaseService = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } }
+      );
+      
+      await supabaseService.from("orders").insert({
+        user_id: user.id,
+        stripe_session_id: session.id,
+        amount: finalAmount,
+        currency: currency,
+        status: "pending",
+        game_id: gameId,
+        created_at: new Date().toISOString()
+      });
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
