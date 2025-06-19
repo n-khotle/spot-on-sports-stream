@@ -8,9 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar, Clock, Play } from "lucide-react";
 import { format } from "date-fns";
-import { useAuth } from "@/hooks/useAuth";
-import { useSubscription } from "@/hooks/useSubscription";
-import PaymentModal from "@/components/PaymentModal";
 
 interface Game {
   id: string;
@@ -26,13 +23,9 @@ interface Game {
 }
 
 const Schedule = () => {
-  const { user } = useAuth();
-  const { subscribed } = useSubscription();
   const navigate = useNavigate();
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
   useEffect(() => {
     fetchScheduledGames();
@@ -53,15 +46,8 @@ const Schedule = () => {
   };
 
   const handleWatchClick = (game: Game) => {
-    // If user is logged in and has active subscription, go to Live page
-    if (user && subscribed) {
-      navigate('/live');
-      return;
-    }
-
-    // Otherwise, show payment modal
-    setSelectedGame(game);
-    setPaymentModalOpen(true);
+    // Always redirect to Live page
+    navigate('/live');
   };
 
   if (loading) {
@@ -168,13 +154,6 @@ const Schedule = () => {
           </div>
         )}
       </main>
-
-      <PaymentModal 
-        open={paymentModalOpen}
-        onOpenChange={setPaymentModalOpen}
-        gameTitle={selectedGame?.title}
-        gameId={selectedGame?.id}
-      />
 
       <Footer />
     </div>
