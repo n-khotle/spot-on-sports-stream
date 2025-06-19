@@ -34,6 +34,7 @@ const Header = () => {
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/live" className="text-foreground hover:text-primary transition-colors">Live</Link>
             <Link to="/schedule" className="text-muted-foreground hover:text-primary transition-colors">Schedule</Link>
+            <Link to="/subscription" className="text-muted-foreground hover:text-primary transition-colors">Subscription</Link>
             <Link to="/news" className="text-muted-foreground hover:text-primary transition-colors">News</Link>
           </nav>
         </div>
@@ -99,6 +100,13 @@ const Header = () => {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Schedule
+                </Link>
+                <Link 
+                  to="/subscription" 
+                  className="text-lg font-medium hover:text-primary transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Subscription
                 </Link>
                 <Link 
                   to="/news" 
