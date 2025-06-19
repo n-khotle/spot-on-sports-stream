@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, CreditCard, DollarSign, Settings, Save, TestTube, AlertCircle, Link, Plus, Copy, ExternalLink, Trash2, Download } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Settings, Save, TestTube, AlertCircle, Link, Plus, Copy, ExternalLink, Trash2, Download, Key, Eye, EyeOff } from 'lucide-react';
 
 interface PaymentLink {
   id: string;
@@ -36,7 +37,10 @@ const PaymentSettings = () => {
     oneTimePaymentEnabled: true,
     guestCheckoutEnabled: false,
     successUrl: '/payment-success',
-    cancelUrl: '/payment-canceled'
+    cancelUrl: '/payment-canceled',
+    publishableKey: '',
+    secretKey: '',
+    webhookSecret: ''
   });
   const [saving, setSaving] = useState(false);
   const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>([]);
@@ -49,6 +53,8 @@ const PaymentSettings = () => {
   const [creatingLink, setCreatingLink] = useState(false);
   const [importLinkUrl, setImportLinkUrl] = useState('');
   const [importingLink, setImportingLink] = useState(false);
+  const [showSecretKey, setShowSecretKey] = useState(false);
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
 
   // Redirect if not admin
   if (!loading && (!user || !isAdmin)) {
@@ -252,19 +258,19 @@ const PaymentSettings = () => {
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="space-y-6">
-          {/* Stripe Configuration */}
+          {/* Stripe API Configuration */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Settings className="w-5 h-5 mr-2" />
-                Stripe Configuration
+                <Key className="w-5 h-5 mr-2" />
+                Stripe API Configuration
               </CardTitle>
               <CardDescription>
-                Configure your Stripe payment gateway settings
+                Configure your Stripe API keys for payment processing
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 mb-4">
                 <Switch
                   id="stripeEnabled"
                   checked={settings.stripeEnabled}
@@ -278,7 +284,7 @@ const PaymentSettings = () => {
 
               {settings.stripeEnabled && (
                 <>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-4">
                     <Switch
                       id="testMode"
                       checked={settings.testMode}
@@ -293,47 +299,150 @@ const PaymentSettings = () => {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="currency">Currency</Label>
-                      <Select value={settings.currency} onValueChange={(value) => handleFieldChange('currency', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select currency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="usd">USD ($)</SelectItem>
-                          <SelectItem value="eur">EUR (€)</SelectItem>
-                          <SelectItem value="gbp">GBP (£)</SelectItem>
-                          <SelectItem value="cad">CAD ($)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="publishableKey">
+                        Publishable Key {settings.testMode ? '(Test)' : '(Live)'}
+                      </Label>
+                      <Input
+                        id="publishableKey"
+                        type="text"
+                        value={settings.publishableKey}
+                        onChange={(e) => handleFieldChange('publishableKey', e.target.value)}
+                        placeholder={settings.testMode ? "pk_test_..." : "pk_live_..."}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        This key is safe to use in your frontend code
+                      </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="defaultPrice">Default Price (in cents)</Label>
-                      <Input
-                        id="defaultPrice"
-                        type="number"
-                        value={settings.defaultPrice}
-                        onChange={(e) => handleFieldChange('defaultPrice', e.target.value)}
-                        placeholder="4999"
-                      />
+                      <Label htmlFor="secretKey">
+                        Secret Key {settings.testMode ? '(Test)' : '(Live)'}
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="secretKey"
+                          type={showSecretKey ? "text" : "password"}
+                          value={settings.secretKey}
+                          onChange={(e) => handleFieldChange('secretKey', e.target.value)}
+                          placeholder={settings.testMode ? "sk_test_..." : "sk_live_..."}
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowSecretKey(!showSecretKey)}
+                        >
+                          {showSecretKey ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Keep this key secure and never share it publicly
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="webhookSecret">Webhook Secret (Optional)</Label>
+                      <div className="relative">
+                        <Input
+                          id="webhookSecret"
+                          type={showWebhookSecret ? "text" : "password"}
+                          value={settings.webhookSecret}
+                          onChange={(e) => handleFieldChange('webhookSecret', e.target.value)}
+                          placeholder="whsec_..."
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                        >
+                          {showWebhookSecret ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Used to verify webhook events from Stripe
+                      </p>
                     </div>
                   </div>
 
-                  <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                  <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex items-start space-x-2">
-                      <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
+                      <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5" />
                       <div>
-                        <p className="font-medium text-sm">Stripe Secret Key Required</p>
-                        <p className="text-sm text-muted-foreground">
-                          You'll need to configure your Stripe secret key in the edge function secrets to enable payments.
+                        <p className="font-medium text-sm text-blue-800 dark:text-blue-200">
+                          How to find your Stripe keys:
                         </p>
+                        <ol className="text-sm text-blue-700 dark:text-blue-300 mt-1 list-decimal list-inside space-y-1">
+                          <li>Log in to your Stripe Dashboard</li>
+                          <li>Navigate to Developers → API Keys</li>
+                          <li>Copy your Publishable key and Secret key</li>
+                          <li>For webhooks, go to Developers → Webhooks</li>
+                        </ol>
                       </div>
                     </div>
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Payment Configuration */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="w-5 h-5 mr-2" />
+                Payment Configuration
+              </CardTitle>
+              <CardDescription>
+                Configure your payment processing settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Default Currency</Label>
+                  <Select value={settings.currency} onValueChange={(value) => handleFieldChange('currency', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="usd">USD ($)</SelectItem>
+                      <SelectItem value="eur">EUR (€)</SelectItem>
+                      <SelectItem value="gbp">GBP (£)</SelectItem>
+                      <SelectItem value="cad">CAD ($)</SelectItem>
+                      <SelectItem value="bwp">BWP (P)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="defaultPrice">Default Price (in cents)</Label>
+                  <Input
+                    id="defaultPrice"
+                    type="number"
+                    value={settings.defaultPrice}
+                    onChange={(e) => handleFieldChange('defaultPrice', e.target.value)}
+                    placeholder="4999"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter amount in cents (e.g., 4999 = $49.99)
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -420,8 +529,10 @@ const PaymentSettings = () => {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span>Stripe Secret Key</span>
-                  <Badge variant="destructive">Not Configured</Badge>
+                  <span>Stripe API Keys</span>
+                  <Badge variant={settings.publishableKey && settings.secretKey ? "default" : "destructive"}>
+                    {settings.publishableKey && settings.secretKey ? "Configured" : "Not Configured"}
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Edge Functions</span>
@@ -492,6 +603,7 @@ const PaymentSettings = () => {
                         <SelectItem value="eur">EUR (€)</SelectItem>
                         <SelectItem value="gbp">GBP (£)</SelectItem>
                         <SelectItem value="cad">CAD ($)</SelectItem>
+                        <SelectItem value="bwp">BWP (P)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
