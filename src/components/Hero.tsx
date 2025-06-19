@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -91,8 +92,7 @@ const Hero = ({ featuredGame }: HeroProps) => {
     return "Watch Live";
   };
 
-  const getButtonVariant = () => {
-    if (!user || (user && !subscribed)) return "default";
+  const getButtonVariant = (): "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" => {
     return "default";
   };
 
