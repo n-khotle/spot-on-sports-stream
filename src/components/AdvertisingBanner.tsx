@@ -72,11 +72,11 @@ const AdvertisingBanner = () => {
             onClick={() => handleBannerClick(currentBanner)}
           >
             {/* Banner Image */}
-            <div className="aspect-[4/1] sm:aspect-[6/1] lg:aspect-[8/1] bg-gradient-to-r from-secondary to-secondary/50">
+            <div className="bg-gradient-to-r from-secondary to-secondary/50">
               <img 
                 src={currentBanner.image_url}
                 alt={currentBanner.title}
-                className="w-full h-full object-cover"
+                className="w-full h-auto object-contain"
                 loading="lazy"
               />
               
