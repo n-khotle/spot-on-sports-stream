@@ -68,25 +68,42 @@ const VideoPlayer = ({
 
   let hideControlsTimeout: NodeJS.Timeout;
 
-  // Check if user has actual access (subscription or allocated products)
-  const checkUserAccess = () => {
-    if (!user) return false;
+  // STRICT access check - user must have subscription OR allocated products
+  const hasValidAccess = () => {
+    console.log('Checking access for user:', user?.email);
+    console.log('Subscribed:', subscribed);
+    console.log('Profile allocated products:', profile?.allocated_subscription_products);
+    
+    if (!user) {
+      console.log('No user - access denied');
+      return false;
+    }
     
     // Check subscription access
-    if (subscribed) return true;
-    
-    // Check allocated products access
-    if (profile?.allocated_subscription_products && profile.allocated_subscription_products.length > 0) {
+    if (subscribed) {
+      console.log('User has active subscription - access granted');
       return true;
     }
     
+    // Check allocated products access
+    if (profile?.allocated_subscription_products && profile.allocated_subscription_products.length > 0) {
+      console.log('User has allocated products - access granted');
+      return true;
+    }
+    
+    console.log('User has no valid access - access denied');
     return false;
   };
 
-  // Only initialize video if user has access
+  // Only initialize video if user has valid access
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !hasAccess || !checkUserAccess()) return;
+    if (!video || !hasValidAccess()) {
+      console.log('Video initialization blocked - no valid access');
+      return;
+    }
+
+    console.log('Initializing video player for authorized user');
 
     // Initialize HLS if needed
     const initializeVideo = () => {
@@ -197,7 +214,7 @@ const VideoPlayer = ({
         hlsRef.current = null;
       }
     };
-  }, [src, isLive, autoPlay, hasAccess, user, subscribed, profile]);
+  }, [src, isLive, autoPlay, user, subscribed, profile]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -217,7 +234,7 @@ const VideoPlayer = ({
       return;
     }
 
-    if (!checkUserAccess()) {
+    if (!hasValidAccess()) {
       // Redirect to subscription page if no access
       navigate('/subscription');
       return;
@@ -328,7 +345,7 @@ const VideoPlayer = ({
         className
       )}
       onMouseMove={() => {
-        if (hasAccess && checkUserAccess()) {
+        if (hasValidAccess()) {
           setShowControls(true);
           clearTimeout(hideControlsTimeout);
           
@@ -340,13 +357,13 @@ const VideoPlayer = ({
         }
       }}
       onMouseLeave={() => {
-        if (hasAccess && checkUserAccess() && isPlaying) {
+        if (hasValidAccess() && isPlaying) {
           hideControlsTimeout = setTimeout(() => setShowControls(false), 1000);
         }
       }}
     >
-      {/* Only render video element if user has proper access */}
-      {hasAccess && checkUserAccess() ? (
+      {/* Only render video element if user has valid access */}
+      {hasValidAccess() ? (
         <>
           <video
             ref={videoRef}

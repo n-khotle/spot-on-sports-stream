@@ -22,10 +22,16 @@ const Live = () => {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [streamingSettings, setStreamingSettings] = useState<any>(null);
 
-  // Check if user has access through product allocation or subscription
+  // STRICT access check - ALL users must have subscription OR allocated products
   useEffect(() => {
     const checkAccess = async () => {
+      console.log('Checking access for user:', user?.email);
+      console.log('User role:', profile?.role);
+      console.log('Subscribed:', subscribed);
+      console.log('Allocated products:', profile?.allocated_subscription_products);
+      
       if (!user || authLoading) {
+        console.log('No user or still loading auth');
         setHasAccess(false);
         setCheckingAccess(false);
         return;
@@ -34,6 +40,7 @@ const Live = () => {
       try {
         // Check if user has subscription access
         if (subscribed) {
+          console.log('User has active subscription - access granted');
           setHasAccess(true);
           setCheckingAccess(false);
           return;
@@ -41,12 +48,14 @@ const Live = () => {
 
         // Check if user has allocated products (for one-time purchases)
         if (profile?.allocated_subscription_products && profile.allocated_subscription_products.length > 0) {
+          console.log('User has allocated products - access granted');
           setHasAccess(true);
           setCheckingAccess(false);
           return;
         }
 
-        // If no access found
+        // If no access found - EVEN FOR ADMINS
+        console.log('User has no valid access - access denied (including admins)');
         setHasAccess(false);
         setCheckingAccess(false);
       } catch (error) {
@@ -64,10 +73,12 @@ const Live = () => {
     const fetchStreamingSettings = async () => {
       // Don't fetch streaming settings if user doesn't have access
       if (!hasAccess) {
+        console.log('Not fetching streaming settings - user has no access');
         setStreamingSettings(null);
         return;
       }
 
+      console.log('Fetching streaming settings for authorized user');
       try {
         const { data, error } = await supabase
           .from('streaming_settings')
@@ -80,6 +91,7 @@ const Live = () => {
           return;
         }
 
+        console.log('Streaming settings fetched:', data);
         setStreamingSettings(data);
       } catch (error) {
         console.error('Error fetching streaming settings:', error);
@@ -131,7 +143,9 @@ const Live = () => {
               <p className="text-lg text-muted-foreground">
                 {!user 
                   ? "Please sign in and purchase access to watch the live stream."
-                  : "You need to purchase access or have an active subscription to watch the live stream."
+                  : profile?.role === 'admin' 
+                    ? "Even as an admin, you need to purchase access or have an active subscription to watch the live stream."
+                    : "You need to purchase access or have an active subscription to watch the live stream."
                 }
               </p>
             </div>
