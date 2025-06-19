@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,7 +26,7 @@ import CancellationPolicy from "./pages/CancellationPolicy";
 
 const queryClient = new QueryClient();
 
-const AppContent = () => {
+const AppRoutes = () => {
   const { settings } = useSiteSettings();
 
   useEffect(() => {
@@ -79,25 +80,23 @@ const AppContent = () => {
   }, [settings]);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/live" element={<Live />} />
-        <Route path="/schedule" element={<Schedule />} />
-        <Route path="/subscription" element={<Subscription />} />
-        <Route path="/news" element={<News />} />
-        <Route path="/about-us" element={<AboutUs />} />
-        <Route path="/refund-policy" element={<PrivacyPolicy />} />
-        <Route path="/cancellation-policy" element={<CancellationPolicy />} />
-        <Route path="/terms-and-conditions" element={<TermsOfService />} />
-        <Route path="/help-center" element={<HelpCenter />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/payment-settings" element={<PaymentSettings />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/live" element={<Live />} />
+      <Route path="/schedule" element={<Schedule />} />
+      <Route path="/subscription" element={<Subscription />} />
+      <Route path="/news" element={<News />} />
+      <Route path="/about-us" element={<AboutUs />} />
+      <Route path="/refund-policy" element={<PrivacyPolicy />} />
+      <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+      <Route path="/terms-and-conditions" element={<TermsOfService />} />
+      <Route path="/help-center" element={<HelpCenter />} />
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/payment-settings" element={<PaymentSettings />} />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 
@@ -106,10 +105,12 @@ const App = () => (
     <AuthProvider>
       <SubscriptionProvider>
         <TooltipProvider>
-          <TrackingScripts />
-          <Toaster />
-          <Sonner />
-          <AppContent />
+          <BrowserRouter>
+            <TrackingScripts />
+            <Toaster />
+            <Sonner />
+            <AppRoutes />
+          </BrowserRouter>
         </TooltipProvider>
       </SubscriptionProvider>
     </AuthProvider>
