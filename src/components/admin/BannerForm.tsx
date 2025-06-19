@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
+import BannerImageUpload from "./BannerImageUpload";
 
 const bannerSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -113,12 +114,17 @@ const BannerForm = ({ banner, onClose, onSuccess }: BannerFormProps) => {
               )}
             />
 
+            <BannerImageUpload
+              onImageUploaded={(url) => form.setValue('image_url', url)}
+              currentImageUrl={form.watch('image_url')}
+            />
+
             <FormField
               control={form.control}
               name="image_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image URL</FormLabel>
+                  <FormLabel>Image URL (Optional - if not uploading)</FormLabel>
                   <FormControl>
                     <Input placeholder="https://example.com/image.jpg" {...field} />
                   </FormControl>
