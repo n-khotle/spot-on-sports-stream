@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,12 +29,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
+        
+        // If we're in the middle of signing out, don't restore the session
+        if (isSigningOut && event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          setIsSigningOut(false);
+          return;
+        }
+        
+        // Don't process session changes during sign out
+        if (isSigningOut) {
+          return;
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -62,28 +78,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single()
-          .then(({ data: profileData }) => {
-            setProfile(profileData);
-            setLoading(false);
-          });
-      } else {
-        setLoading(false);
-      }
-    });
+    // Check for existing session only if not signing out
+    if (!isSigningOut) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single()
+            .then(({ data: profileData }) => {
+              setProfile(profileData);
+              setLoading(false);
+            });
+        } else {
+          setLoading(false);
+        }
+      });
+    }
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [isSigningOut]);
 
   const signUp = async (email: string, password: string, fullName?: string, phoneNumber?: string) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -169,7 +187,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      console.log('Signing out...');
+      console.log('Starting sign out process...');
+      
+      // Set signing out flag to prevent session restoration
+      setIsSigningOut(true);
       
       // Clear local state immediately
       setUser(null);
@@ -181,20 +202,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (error) {
         console.error('Sign out error:', error);
+        setIsSigningOut(false); // Reset flag on error
         throw error;
       }
       
       console.log('Successfully signed out');
       
-      // Force redirect to home page
-      window.location.href = '/';
+      // Force redirect to home page after a brief delay
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
+      
     } catch (error) {
       console.error('Error during sign out:', error);
+      // Reset signing out flag on error
+      setIsSigningOut(false);
       // Even if there's an error, clear the local state and redirect
       setUser(null);
       setSession(null);
       setProfile(null);
-      window.location.href = '/';
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
     }
   };
 
