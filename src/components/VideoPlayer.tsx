@@ -215,7 +215,14 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
       return;
     }
 
-    togglePlay();
+    // Autoplay the video when user has access
+    const video = videoRef.current;
+    if (video) {
+      video.play().catch(error => {
+        console.error('Autoplay failed:', error);
+        // Fallback to showing play button if autoplay fails
+      });
+    }
   };
 
   const togglePlay = () => {
