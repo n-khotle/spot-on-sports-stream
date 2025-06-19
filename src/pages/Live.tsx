@@ -59,9 +59,15 @@ const Live = () => {
     checkAccess();
   }, [user, subscribed, profile, authLoading]);
 
-  // Fetch streaming settings
+  // Only fetch streaming settings if user has access
   useEffect(() => {
     const fetchStreamingSettings = async () => {
+      // Don't fetch streaming settings if user doesn't have access
+      if (!hasAccess) {
+        setStreamingSettings(null);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('streaming_settings')
@@ -80,8 +86,11 @@ const Live = () => {
       }
     };
 
-    fetchStreamingSettings();
-  }, []);
+    // Only fetch if we're not checking access and we know the access status
+    if (!checkingAccess) {
+      fetchStreamingSettings();
+    }
+  }, [hasAccess, checkingAccess]);
 
   const handleGetAccess = () => {
     navigate('/subscription');
@@ -154,8 +163,8 @@ const Live = () => {
     );
   }
 
+  // Only show live stream content if user has verified access
   if (hasAccess) {
-    // Show live stream
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -183,7 +192,7 @@ const Live = () => {
               </Badge>
             </div>
   
-            {/* Video Player */}
+            {/* Video Player - Only show if user has access and streaming settings exist */}
             <div className="space-y-4">
               {streamingSettings ? (
                 <VideoPlayer
@@ -192,6 +201,7 @@ const Live = () => {
                   autoPlay={true}
                   controls={true}
                   isLive={true}
+                  hasAccess={hasAccess}
                   className="w-full aspect-video bg-black rounded-lg"
                 />
               ) : (
@@ -249,6 +259,9 @@ const Live = () => {
       </div>
     );
   }
+
+  // Fallback - should not reach here
+  return null;
 };
 
 export default Live;
