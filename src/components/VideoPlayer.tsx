@@ -190,32 +190,11 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
 
   // Check if user has access to live content
   const hasLiveAccess = () => {
-    if (!user || !userProfile) return false;
-    return userProfile.allocated_subscription_products && 
-           userProfile.allocated_subscription_products.length > 0;
+    return true; // Allow all users to access live content
   };
 
   const handleWatchLiveClick = () => {
-    if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please sign in to watch live streams",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!hasLiveAccess()) {
-      toast({
-        title: "Subscription Required",
-        description: "You need an active subscription to watch live streams",
-        variant: "destructive",
-      });
-      navigate('/subscription');
-      return;
-    }
-
-    // Autoplay the video when user has access
+    // Autoplay the video for all users
     const video = videoRef.current;
     if (video) {
       video.play().catch(error => {

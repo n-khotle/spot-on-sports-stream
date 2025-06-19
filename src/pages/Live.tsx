@@ -143,33 +143,6 @@ const Live = () => {
     );
   }
 
-  // Check if user is authenticated
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <Card className="w-full max-w-md">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Lock className="w-16 h-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Login Required</h3>
-                <p className="text-muted-foreground text-center mb-6">
-                  You need to be logged in to access live streams and matches.
-                </p>
-                <Button asChild className="w-full">
-                  <Link to="/auth">
-                    Sign In to Watch Live
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
