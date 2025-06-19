@@ -178,7 +178,7 @@ const Subscription = () => {
       style: 'currency',
       currency: currency.toUpperCase(),
     });
-    return interval === 'once' ? price : `${price}/${interval}`;
+    return interval === 'once' ? `${price} (One-time)` : `${price}/${interval}`;
   };
 
   const getProductIcon = (name: string) => {
@@ -288,10 +288,12 @@ const Subscription = () => {
                       >
                         {subscribing === price.stripe_price_id
                           ? "Opening checkout..."
-                          : subscribed
+                          : subscribed && price.interval !== 'once'
                           ? "Change Plan"
                           : !price.stripe_price_id
                           ? "Not Available"
+                          : price.interval === 'once'
+                          ? "Buy Now"
                           : "Subscribe Now"
                         }
                       </Button>

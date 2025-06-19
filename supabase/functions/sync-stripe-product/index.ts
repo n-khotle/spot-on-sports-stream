@@ -244,17 +244,23 @@ serve(async (req) => {
           } catch (updateError) {
             logStep("Price update failed, creating new one", { error: updateError.message });
             // If update fails, create a new price
-            stripePrice = await stripe.prices.create({
+            const priceConfig: any = {
               product: stripeProduct.id,
               unit_amount: price.unit_amount,
               currency: price.currency,
-              recurring: {
-                interval: price.interval as 'day' | 'week' | 'month' | 'year',
-                interval_count: price.interval_count,
-              },
               nickname: price.nickname || undefined,
               active: price.active,
-            });
+            };
+
+            // Add recurring config only if not a one-time payment
+            if (price.interval !== 'once') {
+              priceConfig.recurring = {
+                interval: price.interval as 'day' | 'week' | 'month' | 'year',
+                interval_count: price.interval_count,
+              };
+            }
+
+            stripePrice = await stripe.prices.create(priceConfig);
 
             // Update database with new Stripe price ID
             await supabaseClient
@@ -264,17 +270,24 @@ serve(async (req) => {
           }
         } else {
           // Create new Stripe price
-          stripePrice = await stripe.prices.create({
+          const priceConfig: any = {
             product: stripeProduct.id,
             unit_amount: price.unit_amount,
             currency: price.currency,
-            recurring: {
-              interval: price.interval as 'day' | 'week' | 'month' | 'year',
-              interval_count: price.interval_count,
-            },
             nickname: price.nickname || undefined,
             active: price.active,
-          });
+          };
+
+          // Add recurring config only if not a one-time payment
+          if (price.interval !== 'once') {
+            priceConfig.recurring = {
+              interval: price.interval as 'day' | 'week' | 'month' | 'year',
+              interval_count: price.interval_count,
+            };
+          }
+
+          logStep("Creating Stripe price", { interval: price.interval, isOneTime: price.interval === 'once' });
+          stripePrice = await stripe.prices.create(priceConfig);
 
           // Update database with Stripe price ID
           const { error: updatePriceError } = await supabaseClient
@@ -286,7 +299,7 @@ serve(async (req) => {
             logStep("ERROR: Failed to update price with Stripe ID", { error: updatePriceError.message });
             // Continue with other prices instead of failing completely
           }
-          logStep("Stripe price created", { stripePriceId: stripePrice.id });
+          logStep("Stripe price created", { stripePriceId: stripePrice.id, interval: price.interval });
         }
       } catch (priceError) {
         logStep("ERROR: Failed to sync price", { priceId: price.id, error: priceError.message });
