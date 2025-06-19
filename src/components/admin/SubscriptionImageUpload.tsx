@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { X } from 'lucide-react';
+import { X, Image } from 'lucide-react';
 
 interface SubscriptionImageUploadProps {
   imageUrl: string;
@@ -62,16 +62,19 @@ const SubscriptionImageUpload = ({ imageUrl, onImageChange, disabled }: Subscrip
   };
 
   return (
-    <div className="space-y-2">
-      <Label>Product Image</Label>
+    <div className="space-y-4">
+      <Label className="flex items-center space-x-2">
+        <Image className="w-4 h-4" />
+        <span>Product Image</span>
+      </Label>
       
       {/* Image Preview */}
       {imageUrl && (
-        <div className="relative border border-border rounded-lg overflow-hidden">
+        <div className="relative border border-border rounded-lg overflow-hidden bg-card">
           <img 
             src={imageUrl} 
-            alt="Product preview"
-            className="w-full h-32 object-cover"
+            alt="Subscription product preview"
+            className="w-full h-40 object-cover"
           />
           <Button
             type="button"
@@ -87,8 +90,8 @@ const SubscriptionImageUpload = ({ imageUrl, onImageChange, disabled }: Subscrip
       )}
       
       {/* File Upload */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
+      <div className="space-y-2">
+        <div className="relative">
           <Input
             type="file"
             accept="image/*"
@@ -97,7 +100,7 @@ const SubscriptionImageUpload = ({ imageUrl, onImageChange, disabled }: Subscrip
             className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
           />
           {uploading && (
-            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+            <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-md">
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                 <span className="text-sm">Uploading...</span>
@@ -105,18 +108,18 @@ const SubscriptionImageUpload = ({ imageUrl, onImageChange, disabled }: Subscrip
             </div>
           )}
         </div>
-      </div>
-      
-      {/* Alternative URL Input */}
-      <div className="space-y-2">
-        <Label htmlFor="product_image_url" className="text-sm text-muted-foreground">Or enter image URL:</Label>
-        <Input
-          id="product_image_url"
-          value={imageUrl}
-          onChange={(e) => onImageChange(e.target.value)}
-          placeholder="https://example.com/image.jpg"
-          disabled={uploading || disabled}
-        />
+        
+        {/* Alternative URL Input */}
+        <div className="space-y-2">
+          <Label htmlFor="image_url" className="text-sm text-muted-foreground">Or enter image URL:</Label>
+          <Input
+            id="image_url"
+            value={imageUrl}
+            onChange={(e) => onImageChange(e.target.value)}
+            placeholder="https://example.com/image.jpg"
+            disabled={uploading || disabled}
+          />
+        </div>
       </div>
     </div>
   );

@@ -174,6 +174,7 @@ const SubscriptionProductTable = ({ onEdit }: SubscriptionProductTableProps) => 
         <TableHeader>
           <TableRow>
             <TableHead>Product</TableHead>
+            <TableHead>Image</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Prices</TableHead>
             <TableHead>Stripe ID</TableHead>
@@ -184,7 +185,7 @@ const SubscriptionProductTable = ({ onEdit }: SubscriptionProductTableProps) => 
         <TableBody>
           {products.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                 No subscription products found. Create your first product to get started.
               </TableCell>
             </TableRow>
@@ -194,21 +195,25 @@ const SubscriptionProductTable = ({ onEdit }: SubscriptionProductTableProps) => 
               return (
                 <TableRow key={product.id}>
                   <TableCell>
-                    <div className="flex items-center space-x-3">
-                      {product.image_url && (
-                        <img 
-                          src={product.image_url} 
-                          alt={product.name}
-                          className="w-12 h-12 object-cover rounded-md"
-                        />
-                      )}
-                      <div>
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Created {new Date(product.created_at).toLocaleDateString()}
-                        </div>
+                    <div>
+                      <div className="font-medium">{product.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        Created {new Date(product.created_at).toLocaleDateString()}
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {product.image_url ? (
+                      <img 
+                        src={product.image_url} 
+                        alt={product.name}
+                        className="w-16 h-12 object-cover rounded border"
+                      />
+                    ) : (
+                      <div className="w-16 h-12 bg-muted rounded border flex items-center justify-center">
+                        <span className="text-xs text-muted-foreground">No image</span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="max-w-xs truncate">
