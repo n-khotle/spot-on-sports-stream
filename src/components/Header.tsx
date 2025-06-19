@@ -32,7 +32,7 @@ const Header = () => {
           </Link>
           
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/live" className="text-foreground hover:text-primary transition-colors">Live</Link>
+            {user && <Link to="/live" className="text-foreground hover:text-primary transition-colors">Live</Link>}
             <Link to="/schedule" className="text-muted-foreground hover:text-primary transition-colors">Schedule</Link>
             <Link to="/subscription" className="text-muted-foreground hover:text-primary transition-colors">Packages</Link>
             <Link to="/news" className="text-muted-foreground hover:text-primary transition-colors">News</Link>
@@ -87,13 +87,15 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <nav className="flex flex-col space-y-4 mt-8">
-                <Link 
-                  to="/live" 
-                  className="text-lg font-medium hover:text-primary transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Live
-                </Link>
+                {user && (
+                  <Link 
+                    to="/live" 
+                    className="text-lg font-medium hover:text-primary transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Live
+                  </Link>
+                )}
                 <Link 
                   to="/schedule" 
                   className="text-lg font-medium hover:text-primary transition-colors"
