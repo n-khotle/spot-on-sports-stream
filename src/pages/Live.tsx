@@ -39,7 +39,7 @@ const Live = () => {
         }
 
         // Check if user has allocated products (for one-time purchases)
-        if (profile?.allocated_subscription_products && profile.allocated_subscription_products.length > 0) {
+        if (profile && (profile as any).allocated_subscription_products && (profile as any).allocated_subscription_products.length > 0) {
           setHasAccess(true);
           setCheckingAccess(false);
           return;
@@ -189,8 +189,7 @@ const Live = () => {
               <VideoPlayer
                 src={streamingSettings.hls_url || streamingSettings.stream_url}
                 poster={streamingSettings.thumbnail_url}
-                autoPlay={true}
-                controls={true}
+                isLive={true}
                 className="w-full aspect-video bg-black rounded-lg"
               />
             ) : (

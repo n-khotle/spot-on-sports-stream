@@ -3,10 +3,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { useNavigate } from 'react-router-dom';
 
 export const usePaymentVerification = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [verifying, setVerifying] = useState(false);
 
   const verifyPayment = async (sessionId: string) => {
@@ -27,6 +29,12 @@ export const usePaymentVerification = () => {
             "Your payment was successful and you now have access to the content." :
             "Your payment was successful!",
         });
+        
+        // Redirect to live page after successful payment
+        setTimeout(() => {
+          navigate('/live');
+        }, 2000);
+        
         return true;
       } else {
         toast({
