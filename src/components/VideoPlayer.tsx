@@ -5,6 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Play, 
@@ -34,13 +35,24 @@ interface VideoPlayerProps {
   isLive?: boolean;
   autoPlay?: boolean;
   controls?: boolean;
+  hasAccess?: boolean;
   className?: string;
 }
 
-const VideoPlayer = ({ src, poster, title, isLive = false, autoPlay = false, controls = true, className }: VideoPlayerProps) => {
+const VideoPlayer = ({ 
+  src, 
+  poster, 
+  title, 
+  isLive = false, 
+  autoPlay = false, 
+  controls = true, 
+  hasAccess = true,
+  className 
+}: VideoPlayerProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { subscribed } = useSubscription();
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -53,35 +65,27 @@ const VideoPlayer = ({ src, poster, title, isLive = false, autoPlay = false, con
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [quality, setQuality] = useState('Auto');
-  const [userProfile, setUserProfile] = useState<any>(null);
 
   let hideControlsTimeout: NodeJS.Timeout;
 
-  // Fetch user profile to check allocated products
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('allocated_subscription_products')
-          .eq('user_id', user.id)
-          .single();
-
-        if (error) throw error;
-        setUserProfile(data);
-      } catch (error) {
-        console.error('Error fetching user profile:', error);
-      }
-    };
-
-    fetchUserProfile();
-  }, [user]);
+  // Check if user has actual access (subscription or allocated products)
+  const checkUserAccess = () => {
+    if (!user) return false;
+    
+    // Check subscription access
+    if (subscribed) return true;
+    
+    // Check allocated products access
+    if (profile?.allocated_subscription_products && profile.allocated_subscription_products.length > 0) {
+      return true;
+    }
+    
+    return false;
+  };
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !hasAccess) return;
 
     // Initialize HLS if needed
     const initializeVideo = () => {
@@ -192,7 +196,7 @@ const VideoPlayer = ({ src, poster, title, isLive = false, autoPlay = false, con
         hlsRef.current = null;
       }
     };
-  }, [src, isLive, autoPlay]);
+  }, [src, isLive, autoPlay, hasAccess]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -205,18 +209,24 @@ const VideoPlayer = ({ src, poster, title, isLive = false, autoPlay = false, con
     };
   }, []);
 
-  // Check if user has access to live content
-  const hasLiveAccess = () => {
-    return true; // Allow all users to access live content
-  };
-
   const handleWatchLiveClick = () => {
-    // Since Live page already requires login, logged-in users can watch without subscription
+    if (!user) {
+      // Redirect to auth page if not logged in
+      navigate('/auth');
+      return;
+    }
+
+    if (!checkUserAccess()) {
+      // Redirect to subscription page if no access
+      navigate('/subscription');
+      return;
+    }
+
+    // If user has access, start playing
     const video = videoRef.current;
     if (video) {
       video.play().catch(error => {
         console.error('Autoplay failed:', error);
-        // Fallback to showing play button if autoplay fails
       });
     }
   };
@@ -333,13 +343,13 @@ const VideoPlayer = ({ src, poster, title, isLive = false, autoPlay = false, con
         onCanPlay={() => setIsLoading(false)}
         playsInline
         preload="metadata"
-        controls={controls}
+        controls={controls && hasAccess}
         muted={isMuted}
-        autoPlay={autoPlay}
+        autoPlay={autoPlay && hasAccess}
       />
 
       {/* Loading Spinner */}
-      {isLoading && (
+      {isLoading && hasAccess && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
         </div>
@@ -356,163 +366,179 @@ const VideoPlayer = ({ src, poster, title, isLive = false, autoPlay = false, con
       )}
 
       {/* Quality Indicator */}
-      <div className="absolute top-4 right-4 z-20">
-        <Badge variant="secondary" className="bg-black/70 text-white border-white/20">
-          {quality}
-        </Badge>
-      </div>
-
-      {/* Controls Overlay */}
-      <div 
-        className={cn(
-          "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40",
-          "transition-opacity duration-300",
-          showControls ? "opacity-100" : "opacity-0",
-          "flex flex-col justify-between p-4"
-        )}
-      >
-        {/* Top Controls */}
-        <div className="flex justify-between items-start">
-          {title && (
-            <h3 className="text-white font-semibold text-lg max-w-[70%] truncate">
-              {title}
-            </h3>
-          )}
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-black/90 border-white/20">
-              <DropdownMenuItem className="text-white hover:bg-white/20">
-                <Settings className="w-4 h-4 mr-2" />
-                Quality
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-white hover:bg-white/20">
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {hasAccess && (
+        <div className="absolute top-4 right-4 z-20">
+          <Badge variant="secondary" className="bg-black/70 text-white border-white/20">
+            {quality}
+          </Badge>
         </div>
+      )}
 
-        {/* Bottom Controls */}
-        <div className="space-y-4">
-          {/* Progress Bar */}
-          {!isLive && (
-            <div className="space-y-2">
-              <Slider
-                value={[currentTime]}
-                max={duration || 100}
-                step={1}
-                onValueChange={handleSeek}
-                className="w-full cursor-pointer"
-                disabled={isLive}
-              />
-              <div className="flex justify-between text-white text-sm">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
-              </div>
-            </div>
+      {/* Controls Overlay - Only show if user has access */}
+      {hasAccess && (
+        <div 
+          className={cn(
+            "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40",
+            "transition-opacity duration-300",
+            showControls ? "opacity-100" : "opacity-0",
+            "flex flex-col justify-between p-4"
           )}
+        >
+          {/* Top Controls */}
+          <div className="flex justify-between items-start">
+            {title && (
+              <h3 className="text-white font-semibold text-lg max-w-[70%] truncate">
+                {title}
+              </h3>
+            )}
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-black/90 border-white/20">
+                <DropdownMenuItem className="text-white hover:bg-white/20">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Quality
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-white hover:bg-white/20">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-          {/* Control Buttons */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {/* Play/Pause */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={togglePlay}
-                className="text-white hover:bg-white/20 p-2"
-              >
-                {isPlaying ? (
-                  <Pause className="w-6 h-6" />
-                ) : (
-                  <Play className="w-6 h-6" />
-                )}
-              </Button>
+          {/* Bottom Controls */}
+          <div className="space-y-4">
+            {/* Progress Bar */}
+            {!isLive && (
+              <div className="space-y-2">
+                <Slider
+                  value={[currentTime]}
+                  max={duration || 100}
+                  step={1}
+                  onValueChange={handleSeek}
+                  className="w-full cursor-pointer"
+                  disabled={isLive}
+                />
+                <div className="flex justify-between text-white text-sm">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
+              </div>
+            )}
 
-              {/* Volume */}
+            {/* Control Buttons */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                {/* Play/Pause */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={togglePlay}
+                  className="text-white hover:bg-white/20 p-2"
+                >
+                  {isPlaying ? (
+                    <Pause className="w-6 h-6" />
+                  ) : (
+                    <Play className="w-6 h-6" />
+                  )}
+                </Button>
+
+                {/* Volume */}
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleMute}
+                    className="text-white hover:bg-white/20 p-2"
+                  >
+                    {isMuted || volume === 0 ? (
+                      <VolumeX className="w-5 h-5" />
+                    ) : (
+                      <Volume2 className="w-5 h-5" />
+                    )}
+                  </Button>
+                  
+                  <div className="hidden md:block w-20">
+                    <Slider
+                      value={[isMuted ? 0 : volume]}
+                      max={1}
+                      step={0.1}
+                      onValueChange={handleVolumeChange}
+                      className="cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Controls */}
               <div className="flex items-center space-x-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={toggleMute}
+                  onClick={toggleFullscreen}
                   className="text-white hover:bg-white/20 p-2"
                 >
-                  {isMuted || volume === 0 ? (
-                    <VolumeX className="w-5 h-5" />
+                  {isFullscreen ? (
+                    <Minimize className="w-5 h-5" />
                   ) : (
-                    <Volume2 className="w-5 h-5" />
+                    <Maximize className="w-5 h-5" />
                   )}
                 </Button>
-                
-                <div className="hidden md:block w-20">
-                  <Slider
-                    value={[isMuted ? 0 : volume]}
-                    max={1}
-                    step={0.1}
-                    onValueChange={handleVolumeChange}
-                    className="cursor-pointer"
-                  />
-                </div>
               </div>
-            </div>
-
-            {/* Right Controls */}
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleFullscreen}
-                className="text-white hover:bg-white/20 p-2"
-              >
-                {isFullscreen ? (
-                  <Minimize className="w-5 h-5" />
-                ) : (
-                  <Maximize className="w-5 h-5" />
-                )}
-              </Button>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Watch Live Button Overlay */}
-      {isLive && !isPlaying && !isLoading && (
+      {/* Access Required Overlay for users without access */}
+      {!hasAccess && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="text-center space-y-4 p-8">
+            <div className="w-16 h-16 mx-auto bg-primary/20 rounded-full flex items-center justify-center">
+              <Lock className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Access Required</h3>
+            <p className="text-white/80 max-w-md">
+              {!user 
+                ? "Please sign in and purchase access to watch this content."
+                : "You need to purchase access or have an active subscription to watch this content."
+              }
+            </p>
+            <Button
+              onClick={handleWatchLiveClick}
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-white"
+            >
+              {!user ? "Sign In" : "Get Access"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Watch Live Button Overlay for live content */}
+      {isLive && !isPlaying && !isLoading && hasAccess && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          {hasLiveAccess() ? (
-            <Button
-              onClick={handleWatchLiveClick}
-              size="lg"
-              className="px-8 py-4 text-lg font-semibold bg-red-600 hover:bg-red-700 text-white border-2 border-white/30 rounded-full shadow-2xl animate-pulse hover:animate-none transition-all duration-300 hover:scale-105"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-                <span>Watch Live</span>
-                <Play className="w-5 h-5 fill-white ml-1" />
-              </div>
-            </Button>
-          ) : (
-            <Button
-              onClick={handleWatchLiveClick}
-              size="lg"
-              className="px-8 py-4 text-lg font-semibold bg-gray-600 hover:bg-gray-700 text-white border-2 border-white/30 rounded-full shadow-2xl transition-all duration-300 hover:scale-105"
-            >
-              <div className="flex items-center space-x-3">
-                <Lock className="w-5 h-5" />
-                <span>Get Access</span>
-              </div>
-            </Button>
-          )}
+          <Button
+            onClick={handleWatchLiveClick}
+            size="lg"
+            className="px-8 py-4 text-lg font-semibold bg-red-600 hover:bg-red-700 text-white border-2 border-white/30 rounded-full shadow-2xl animate-pulse hover:animate-none transition-all duration-300 hover:scale-105"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+              <span>Watch Live</span>
+              <Play className="w-5 h-5 fill-white ml-1" />
+            </div>
+          </Button>
         </div>
       )}
 
       {/* Large Play Button (Non-Live Content) */}
-      {!isLive && !isPlaying && !isLoading && (
+      {!isLive && !isPlaying && !isLoading && hasAccess && (
         <div className="absolute inset-0 flex items-center justify-center md:hidden">
           <Button
             onClick={togglePlay}

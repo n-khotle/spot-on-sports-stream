@@ -26,6 +26,7 @@ const Live = () => {
   useEffect(() => {
     const checkAccess = async () => {
       if (!user || authLoading) {
+        setHasAccess(false);
         setCheckingAccess(false);
         return;
       }
@@ -79,10 +80,8 @@ const Live = () => {
       }
     };
 
-    if (hasAccess) {
-      fetchStreamingSettings();
-    }
-  }, [hasAccess]);
+    fetchStreamingSettings();
+  }, []);
 
   const handleGetAccess = () => {
     navigate('/subscription');
@@ -108,7 +107,7 @@ const Live = () => {
     );
   }
 
-  // Show access required message
+  // Show access required message for users without login or payment
   if (!user || !hasAccess) {
     return (
       <div className="min-h-screen bg-background">
