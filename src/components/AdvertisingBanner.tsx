@@ -103,10 +103,6 @@ const AdvertisingBanner = () => {
             </div>
           )}
 
-          {/* Advertisement Label */}
-          <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-xs text-muted-foreground px-2 py-1 rounded border border-border/20">
-            Advertisement
-          </div>
         </div>
       </div>
     </section>
