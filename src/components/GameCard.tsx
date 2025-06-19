@@ -103,19 +103,6 @@ const GameCard = ({ homeTeam, awayTeam, league, date, time, price, status, viewe
             </div>
           )}
           
-          <div className="flex flex-col space-y-2 sm:space-y-3">
-            <div className="text-center">
-              <span className="text-xl sm:text-2xl font-bold text-primary">P15.00</span>
-            </div>
-            <Button 
-              className="w-full min-h-[44px] text-sm sm:text-base" 
-              onClick={handleBuyNow}
-              disabled={status === "ended"}
-            >
-              <Play className="w-4 h-4 mr-2 fill-current" />
-              {status === "live" ? "Watch Live" : status === "upcoming" ? "Watch Live" : "Replay"}
-            </Button>
-          </div>
         </div>
         
         <PaymentModal 
