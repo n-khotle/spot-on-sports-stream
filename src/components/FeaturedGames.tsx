@@ -27,6 +27,7 @@ const FeaturedGames = () => {
       .from('games')
       .select('*')
       .eq('status', 'published')
+      .eq('featured', false)
       .order('created_at', { ascending: false })
       .limit(6);
     
