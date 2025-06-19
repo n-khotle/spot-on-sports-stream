@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -18,7 +19,7 @@ serve(async (req) => {
   );
 
   try {
-    const { gameId, amount = 1500, currency = "bwp" } = await req.json(); // Default P15.00 BWP
+    const { gameId, amount = 1500, currency = "bwp", productId } = await req.json();
     
     // Use the amount directly since it's already in the correct currency
     let finalAmount = amount;
@@ -55,17 +56,22 @@ serve(async (req) => {
       customer_email: customerId ? undefined : userEmail,
       line_items: [
         {
-        price_data: {
-          currency: currency,
-          product_data: { name: "Game Access - One-Time Purchase" },
-          unit_amount: finalAmount,
-        },
+          price_data: {
+            currency: currency,
+            product_data: { name: "Game Access - One-Time Purchase" },
+            unit_amount: finalAmount,
+          },
           quantity: 1,
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/live`,
+      success_url: `${req.headers.get("origin")}/live?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/`,
+      metadata: {
+        user_id: user?.id || "guest",
+        product_id: productId || "default_product",
+        game_id: gameId || ""
+      }
     });
 
     // Record the order if user is authenticated

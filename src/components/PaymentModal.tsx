@@ -18,10 +18,11 @@ interface PaymentModalProps {
 }
 
 const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalProps) => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState("bwp");
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   const getCurrencySymbol = (curr: string) => curr === "bwp" ? "P" : "$";
   const getOneTimePrice = () => currency === "bwp" ? "15.00" : "1.15";
@@ -32,9 +33,18 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
   const handleOneTimePayment = async () => {
     setLoading(true);
     try {
+      // For one-time payments, we'll use a default product ID
+      // In a real implementation, you might want to create specific products for games
+      const defaultProductId = "default-game-access-product";
+      
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { gameId, amount: currency === "bwp" ? 1500 : 115, currency },
-        headers: user ? { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` } : {}
+        body: { 
+          gameId, 
+          amount: currency === "bwp" ? 1500 : 115, 
+          currency,
+          productId: defaultProductId
+        },
+        headers: user ? { Authorization: `Bearer ${session?.access_token}` } : {}
       });
 
       if (error) throw error;
@@ -68,7 +78,7 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { tier, currency },
-        headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` }
+        headers: { Authorization: `Bearer ${session?.access_token}` }
       });
 
       if (error) throw error;
@@ -152,6 +162,12 @@ const PaymentModal = ({ open, onOpenChange, gameTitle, gameId }: PaymentModalPro
                     <Check className="w-4 h-4 text-green-500" />
                     <span className="text-sm">Works for guest users</span>
                   </div>
+                  {user && (
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-green-500" />
+                      <span className="text-sm">Automatic access after payment</span>
+                    </div>
+                  )}
                 </div>
 
                 <Button 
