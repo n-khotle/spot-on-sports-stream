@@ -51,6 +51,37 @@ const Subscription = () => {
     }
   }, [user, authLoading, navigate]);
 
+  // Auto-reset processing state after 10 seconds
+  useEffect(() => {
+    if (subscribing) {
+      const timeout = setTimeout(() => {
+        setSubscribing(null);
+        toast({
+          title: "Checkout Timeout",
+          description: "Please try again if the checkout didn't open properly.",
+          variant: "default",
+        });
+      }, 10000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [subscribing, toast]);
+
+  // Reset processing state when user returns to the tab
+  useEffect(() => {
+    const handleFocus = () => {
+      if (subscribing) {
+        // Small delay to allow Stripe redirect to complete
+        setTimeout(() => {
+          setSubscribing(null);
+        }, 1000);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [subscribing]);
+
   const fetchSubscriptionProducts = async () => {
     try {
       const { data: productsData, error: productsError } = await supabase
@@ -100,19 +131,30 @@ const Subscription = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Checkout error:", error);
+        throw error;
+      }
 
       if (data?.url) {
+        // Reset processing state immediately after opening Stripe
+        setTimeout(() => setSubscribing(null), 2000);
         window.open(data.url, "_blank");
+        
+        toast({
+          title: "Redirecting to Checkout",
+          description: "Please complete your payment in the new tab.",
+        });
+      } else {
+        throw new Error("No checkout URL received");
       }
     } catch (error) {
       console.error("Error creating checkout session:", error);
       toast({
         title: "Error",
-        description: "Failed to start subscription process",
+        description: "Failed to start subscription process. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setSubscribing(null);
     }
   };
@@ -219,7 +261,7 @@ const Subscription = () => {
                         disabled={!price.stripe_price_id || subscribing === price.stripe_price_id || subLoading}
                       >
                         {subscribing === price.stripe_price_id
-                          ? "Processing..."
+                          ? "Opening checkout..."
                           : subscribed
                           ? "Change Plan"
                           : "Subscribe Now"
@@ -238,7 +280,6 @@ const Subscription = () => {
             <Button 
               variant="outline"
               onClick={() => {
-                // This would open the customer portal for managing subscription
                 supabase.functions.invoke("customer-portal", {
                   headers: {
                     Authorization: `Bearer ${session?.access_token}`,
