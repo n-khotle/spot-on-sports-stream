@@ -428,6 +428,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          image_url: string | null
           name: string
           stripe_product_id: string | null
           updated_at: string
@@ -437,6 +438,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           name: string
           stripe_product_id?: string | null
           updated_at?: string
@@ -446,6 +448,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           name?: string
           stripe_product_id?: string | null
           updated_at?: string
