@@ -27,54 +27,44 @@ const Footer = () => {
             </p>
             
             {/* Social Media Icons */}
-            {(settings?.facebook_handle || settings?.x_handle || settings?.instagram_handle || settings?.tiktok_handle) && (
-              <div className="flex items-center justify-center sm:justify-start space-x-4 mt-4">
-                {settings?.facebook_handle && (
-                  <a 
-                    href={`https://facebook.com/${settings.facebook_handle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="Facebook"
-                  >
-                    <Facebook className="w-5 h-5" />
-                  </a>
-                )}
-                {settings?.x_handle && (
-                  <a 
-                    href={`https://x.com/${settings.x_handle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="X (Twitter)"
-                  >
-                    <Twitter className="w-5 h-5" />
-                  </a>
-                )}
-                {settings?.instagram_handle && (
-                  <a 
-                    href={`https://instagram.com/${settings.instagram_handle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="Instagram"
-                  >
-                    <Instagram className="w-5 h-5" />
-                  </a>
-                )}
-                {settings?.tiktok_handle && (
-                  <a 
-                    href={`https://tiktok.com/@${settings.tiktok_handle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    aria-label="TikTok"
-                  >
-                    <Music className="w-5 h-5" />
-                  </a>
-                )}
-              </div>
-            )}
+            <div className="flex items-center justify-center sm:justify-start space-x-4 mt-4">
+              <a 
+                href={settings?.facebook_handle ? `https://facebook.com/${settings.facebook_handle}` : "https://facebook.com"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="Facebook"
+              >
+                <Facebook className="w-5 h-5" />
+              </a>
+              <a 
+                href={settings?.x_handle ? `https://x.com/${settings.x_handle}` : "https://x.com"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="X (Twitter)"
+              >
+                <Twitter className="w-5 h-5" />
+              </a>
+              <a 
+                href={settings?.instagram_handle ? `https://instagram.com/${settings.instagram_handle}` : "https://instagram.com"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+              <a 
+                href={settings?.tiktok_handle ? `https://tiktok.com/@${settings.tiktok_handle}` : "https://tiktok.com"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-primary transition-colors"
+                aria-label="TikTok"
+              >
+                <Music className="w-5 h-5" />
+              </a>
+            </div>
           </div>
           
           <div className="text-center sm:text-left">
