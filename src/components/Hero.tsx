@@ -75,9 +75,9 @@ const Hero = ({ featuredGame }: HeroProps) => {
       return;
     }
 
-    // If user is not logged in, redirect to auth page first
+    // If user is not logged in, redirect to packages page
     if (!user) {
-      navigate('/auth');
+      navigate('/subscription');
       return;
     }
 
