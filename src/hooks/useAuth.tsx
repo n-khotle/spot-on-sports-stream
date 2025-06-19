@@ -9,6 +9,7 @@ interface Profile {
   full_name: string | null;
   phone_number: string | null;
   role: string;
+  allocated_subscription_products: string[] | null;
 }
 
 interface AuthContextType {

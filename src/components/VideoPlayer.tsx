@@ -32,10 +32,12 @@ interface VideoPlayerProps {
   poster?: string;
   title?: string;
   isLive?: boolean;
+  autoPlay?: boolean;
+  controls?: boolean;
   className?: string;
 }
 
-const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPlayerProps) => {
+const VideoPlayer = ({ src, poster, title, isLive = false, autoPlay = false, controls = true, className }: VideoPlayerProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -99,6 +101,11 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             console.log('HLS manifest loaded');
             setIsLoading(false);
+            if (autoPlay) {
+              video.play().catch(error => {
+                console.error('Autoplay failed:', error);
+              });
+            }
           });
           
           hls.on(Hls.Events.ERROR, (event, data) => {
@@ -123,12 +130,22 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
           // Native HLS support (Safari)
           video.src = src;
+          if (autoPlay) {
+            video.play().catch(error => {
+              console.error('Autoplay failed:', error);
+            });
+          }
         } else {
           console.error('HLS is not supported in this browser');
         }
       } else {
         // Regular video
         video.src = src;
+        if (autoPlay) {
+          video.play().catch(error => {
+            console.error('Autoplay failed:', error);
+          });
+        }
       }
     };
 
@@ -175,7 +192,7 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
         hlsRef.current = null;
       }
     };
-  }, [src, isLive]);
+  }, [src, isLive, autoPlay]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -316,8 +333,9 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
         onCanPlay={() => setIsLoading(false)}
         playsInline
         preload="metadata"
-        controls={false}
+        controls={controls}
         muted={isMuted}
+        autoPlay={autoPlay}
       />
 
       {/* Loading Spinner */}

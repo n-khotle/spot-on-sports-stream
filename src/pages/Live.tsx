@@ -191,6 +191,7 @@ const Live = () => {
                 poster={streamingSettings.thumbnail_url}
                 autoPlay={true}
                 controls={true}
+                isLive={true}
                 className="w-full aspect-video bg-black rounded-lg"
               />
             ) : (
