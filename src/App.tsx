@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import PaymentSettings from "./pages/PaymentSettings";
 import Schedule from "./pages/Schedule";
+import Subscription from "./pages/Subscription";
 import News from "./pages/News";
 import AboutUs from "./pages/AboutUs";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -83,6 +84,7 @@ const AppContent = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/live" element={<Live />} />
         <Route path="/schedule" element={<Schedule />} />
+        <Route path="/subscription" element={<Subscription />} />
         <Route path="/news" element={<News />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
