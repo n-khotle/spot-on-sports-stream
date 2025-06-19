@@ -28,21 +28,47 @@ serve(async (req) => {
 
     const { priceId, successUrl, cancelUrl } = await req.json();
     
-    if (!priceId) throw new Error("Price ID is required");
+    if (!priceId) {
+      logStep("Error: Price ID is required");
+      throw new Error("Price ID is required");
+    }
     
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      logStep("Error: No authorization header");
+      throw new Error("No authorization header provided");
+    }
+
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user?.email) {
+      logStep("Error: User not authenticated");
+      throw new Error("User not authenticated or email not available");
+    }
 
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      logStep("Error: Stripe secret key not configured");
+      throw new Error("Stripe secret key not configured");
+    }
+
+    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
     // Get the product ID from the price
-    const price = await stripe.prices.retrieve(priceId);
+    let price;
+    try {
+      price = await stripe.prices.retrieve(priceId);
+      logStep("Price retrieved", { priceId, amount: price.unit_amount, currency: price.currency });
+    } catch (error) {
+      logStep("Error retrieving price from Stripe", { priceId, error: error.message });
+      throw new Error(`Invalid price ID: ${priceId}`);
+    }
+    
     if (!price.active) {
+      logStep("Error: Price is not active", { priceId });
       throw new Error("Price is not active");
     }
     
@@ -54,12 +80,13 @@ serve(async (req) => {
       .single();
 
     if (priceError || !dbPrice) {
-      logStep("Error finding product", { error: priceError });
+      logStep("Error finding product in database", { priceId, error: priceError });
       throw new Error("Product not found in database");
     }
 
     const productId = dbPrice.product_id;
-    logStep("Found product", { productId, productName: (dbPrice as any).subscription_products?.name });
+    const productName = (dbPrice as any).subscription_products?.name || "Unknown Product";
+    logStep("Found product", { productId, productName });
     
     // Check if customer exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -68,11 +95,16 @@ serve(async (req) => {
       customerId = customers.data[0].id;
       logStep("Found existing customer", { customerId });
     } else {
-      logStep("No existing customer found");
+      logStep("No existing customer found, will create during checkout");
     }
 
     const isOneTimePayment = !price.recurring;
-    logStep("Price verified", { priceId, amount: price.unit_amount, currency: price.currency, isOneTime: isOneTimePayment });
+    logStep("Payment type determined", { 
+      priceId, 
+      amount: price.unit_amount, 
+      currency: price.currency, 
+      isOneTime: isOneTimePayment 
+    });
 
     // Create checkout session with appropriate mode and metadata
     const sessionConfig: any = {
@@ -92,13 +124,20 @@ serve(async (req) => {
       metadata: {
         user_id: user.id,
         product_id: productId,
-        product_name: (dbPrice as any).subscription_products?.name || "Unknown Product"
+        product_name: productName
       },
     };
 
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    logStep("Creating checkout session", { mode: sessionConfig.mode, metadata: sessionConfig.metadata });
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url, mode: sessionConfig.mode, metadata: sessionConfig.metadata });
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(sessionConfig);
+      logStep("Checkout session created successfully", { sessionId: session.id, url: session.url });
+    } catch (stripeError) {
+      logStep("Stripe checkout creation failed", { error: stripeError.message });
+      throw new Error(`Failed to create checkout session: ${stripeError.message}`);
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
