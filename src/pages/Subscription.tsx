@@ -118,8 +118,11 @@ const Subscription = () => {
   };
 
   const formatPrice = (amount: number, currency: string, interval: string) => {
-    const price = (amount / 100).toFixed(2);
-    return `$${price}/${interval}`;
+    const price = (amount / 100).toLocaleString('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    });
+    return `${price}/${interval}`;
   };
 
   const getProductIcon = (name: string) => {
