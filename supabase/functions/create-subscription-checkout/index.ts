@@ -61,15 +61,15 @@ serve(async (req) => {
     let price;
     try {
       price = await stripe.prices.retrieve(priceId);
-      logStep("Price retrieved", { priceId, amount: price.unit_amount, currency: price.currency });
+      logStep("Price retrieved from Stripe", { priceId, amount: price.unit_amount, currency: price.currency });
     } catch (error) {
       logStep("Error retrieving price from Stripe", { priceId, error: error.message });
-      throw new Error(`Invalid price ID: ${priceId}`);
+      throw new Error(`Invalid price ID: ${priceId}. Please check your Stripe configuration.`);
     }
     
     if (!price.active) {
       logStep("Error: Price is not active", { priceId });
-      throw new Error("Price is not active");
+      throw new Error("This price is not active in Stripe");
     }
     
     // Get product details from Supabase to find the product ID
@@ -81,12 +81,12 @@ serve(async (req) => {
 
     if (priceError || !dbPrice) {
       logStep("Error finding product in database", { priceId, error: priceError });
-      throw new Error("Product not found in database");
+      throw new Error(`This product price (${priceId}) has not been synced to the database yet. Please sync the product from the admin panel first.`);
     }
 
     const productId = dbPrice.product_id;
     const productName = (dbPrice as any).subscription_products?.name || "Unknown Product";
-    logStep("Found product", { productId, productName });
+    logStep("Found product in database", { productId, productName });
     
     // Check if customer exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -135,7 +135,7 @@ serve(async (req) => {
       session = await stripe.checkout.sessions.create(sessionConfig);
       logStep("Checkout session created successfully", { sessionId: session.id, url: session.url });
     } catch (stripeError) {
-      logStep("Stripe checkout creation failed", { error: stripeError.message });
+      logStep("Stripe checkout creation failed", { error: stripeError.message, config: sessionConfig });
       throw new Error(`Failed to create checkout session: ${stripeError.message}`);
     }
 
