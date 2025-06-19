@@ -194,7 +194,7 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
   };
 
   const handleWatchLiveClick = () => {
-    // Autoplay the video for all users
+    // Since Live page already requires login, logged-in users can watch without subscription
     const video = videoRef.current;
     if (video) {
       video.play().catch(error => {
