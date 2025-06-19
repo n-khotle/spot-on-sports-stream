@@ -189,8 +189,7 @@ const Subscription = () => {
                       <img 
                         src={(product as any).image_url} 
                         alt={product.name}
-                        className="object-cover rounded-lg border"
-                        style={{ width: '500px', height: 'auto' }}
+                        className="w-24 h-18 object-cover rounded-lg border"
                       />
                     </div>
                   ) : (
