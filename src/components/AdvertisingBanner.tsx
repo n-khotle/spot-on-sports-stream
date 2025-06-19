@@ -29,19 +29,22 @@ const AdvertisingBanner = () => {
   }, [banners.length]);
 
   const fetchActiveBanners = async () => {
-    // For now, we'll use placeholder data since the ad_banners table doesn't exist yet
-    // In the future, this would fetch from a real table
-    const placeholderBanners = [
-      {
-        id: "1",
-        title: "Premium Sports Package",
-        image_url: "https://images.unsplash.com/photo-1579952363873-27d3bfad9c0d?auto=format&fit=crop&w=1200&h=300",
-        click_url: "#",
-        is_active: true,
-        created_at: new Date().toISOString()
-      }
-    ];
-    setBanners(placeholderBanners);
+    try {
+      const { data, error } = await supabase
+        .from("ad_banners")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setBanners(data || []);
+    } catch (error) {
+      console.error("Error fetching banners:", error);
+      // Fallback to empty array if fetch fails
+      setBanners([]);
+    }
   };
 
   const handleBannerClick = (banner: AdBanner) => {
