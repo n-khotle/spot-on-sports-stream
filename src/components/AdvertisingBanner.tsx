@@ -50,7 +50,7 @@ const AdvertisingBanner = () => {
   const handleBannerClick = (banner: AdBanner) => {
     if (banner.click_url && banner.click_url !== "#") {
       // Track click event here if needed
-      window.open(banner.click_url, "_blank", "noopener,noreferrer");
+      window.location.href = banner.click_url;
     }
   };
 
