@@ -40,6 +40,27 @@ serve(async (req) => {
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
     
+    // Get the product ID from the price
+    const price = await stripe.prices.retrieve(priceId);
+    if (!price.active) {
+      throw new Error("Price is not active");
+    }
+    
+    // Get product details from Supabase to find the product ID
+    const { data: dbPrice, error: priceError } = await supabaseClient
+      .from("subscription_prices")
+      .select("product_id, subscription_products(id, name)")
+      .eq("stripe_price_id", priceId)
+      .single();
+
+    if (priceError || !dbPrice) {
+      logStep("Error finding product", { error: priceError });
+      throw new Error("Product not found in database");
+    }
+
+    const productId = dbPrice.product_id;
+    logStep("Found product", { productId, productName: (dbPrice as any).subscription_products?.name });
+    
     // Check if customer exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
@@ -50,16 +71,10 @@ serve(async (req) => {
       logStep("No existing customer found");
     }
 
-    // Get the price details to verify it exists and check if it's recurring
-    const price = await stripe.prices.retrieve(priceId);
-    if (!price.active) {
-      throw new Error("Price is not active");
-    }
-    
     const isOneTimePayment = !price.recurring;
     logStep("Price verified", { priceId, amount: price.unit_amount, currency: price.currency, isOneTime: isOneTimePayment });
 
-    // Create checkout session with appropriate mode
+    // Create checkout session with appropriate mode and metadata
     const sessionConfig: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -70,15 +85,20 @@ serve(async (req) => {
         },
       ],
       mode: isOneTimePayment ? "payment" : "subscription",
-      success_url: successUrl || `${req.headers.get("origin")}/`,
-      cancel_url: cancelUrl || `${req.headers.get("origin")}/`,
+      success_url: successUrl || `${req.headers.get("origin")}/live?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl || `${req.headers.get("origin")}/subscription?canceled=true`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
+      metadata: {
+        user_id: user.id,
+        product_id: productId,
+        product_name: (dbPrice as any).subscription_products?.name || "Unknown Product"
+      },
     };
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url, mode: sessionConfig.mode });
+    logStep("Checkout session created", { sessionId: session.id, url: session.url, mode: sessionConfig.mode, metadata: sessionConfig.metadata });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

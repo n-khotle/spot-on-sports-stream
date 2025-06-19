@@ -25,15 +25,15 @@ export const usePaymentVerification = () => {
       if (data?.success && data?.status === 'paid') {
         toast({
           title: "Payment Successful!",
-          description: data.allocated ? 
-            "Your payment was successful and you now have access to the content." :
+          description: data.allocated && data.productName ? 
+            `You now have access to ${data.productName}. Redirecting to live stream...` :
             "Your payment was successful!",
         });
         
-        // Redirect to live page after successful payment
+        // Always redirect to live page after successful payment
         setTimeout(() => {
           navigate('/live');
-        }, 2000);
+        }, 1500);
         
         return true;
       } else {

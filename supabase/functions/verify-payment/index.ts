@@ -8,6 +8,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[VERIFY-PAYMENT] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -20,6 +25,8 @@ serve(async (req) => {
   );
 
   try {
+    logStep("Function started");
+
     const { sessionId } = await req.json();
     
     if (!sessionId) {
@@ -31,15 +38,21 @@ serve(async (req) => {
     // Retrieve the checkout session from Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     
-    console.log("Payment session status:", session.payment_status);
-    console.log("Session metadata:", session.metadata);
+    logStep("Payment session retrieved", { 
+      status: session.payment_status, 
+      metadata: session.metadata,
+      mode: session.mode 
+    });
     
     if (session.payment_status === "paid") {
       const userId = session.metadata?.user_id;
       const productId = session.metadata?.product_id;
+      const productName = session.metadata?.product_name;
+      
+      logStep("Payment confirmed as paid", { userId, productId, productName });
       
       if (userId && userId !== "guest" && productId && productId !== "default_product") {
-        console.log(`Allocating product ${productId} to user ${userId}`);
+        logStep(`Allocating product ${productId} to user ${userId}`);
         
         // Use the database function to allocate the product to the user
         const { error: allocationError } = await supabaseService.rpc('allocate_product_to_user', {
@@ -48,32 +61,42 @@ serve(async (req) => {
         });
         
         if (allocationError) {
-          console.error("Error allocating product to user:", allocationError);
+          logStep("Error allocating product to user", { error: allocationError });
         } else {
-          console.log("Product successfully allocated to user");
+          logStep("Product successfully allocated to user", { userId, productId, productName });
         }
+        
+        // Update order status to paid if order exists
+        const { error: updateError } = await supabaseService
+          .from("orders")
+          .update({ status: "paid" })
+          .eq("stripe_session_id", sessionId);
+        
+        if (updateError) {
+          logStep("Error updating order status", { error: updateError });
+        }
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          status: "paid",
+          allocated: true,
+          productName: productName
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
       } else {
-        console.log("No product allocation needed - guest user or no product specified");
+        logStep("No product allocation needed - guest user or no product specified");
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          status: "paid",
+          allocated: false
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
       }
-      
-      // Update order status to paid
-      const { error: updateError } = await supabaseService
-        .from("orders")
-        .update({ status: "paid" })
-        .eq("stripe_session_id", sessionId);
-      
-      if (updateError) {
-        console.error("Error updating order status:", updateError);
-      }
-      
-      return new Response(JSON.stringify({ 
-        success: true, 
-        status: "paid",
-        allocated: userId && userId !== "guest" && productId && productId !== "default_product"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
     }
     
     return new Response(JSON.stringify({ 
@@ -85,8 +108,9 @@ serve(async (req) => {
     });
     
   } catch (error) {
-    console.error("Payment verification error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep("Payment verification error", { error: errorMessage });
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
