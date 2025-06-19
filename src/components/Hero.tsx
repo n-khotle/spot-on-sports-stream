@@ -69,26 +69,19 @@ const Hero = ({ featuredGame }: HeroProps) => {
   };
 
   const handleWatchClick = () => {
-    // If user is logged in and has active subscription, go to Live page
-    if (user && subscribed) {
+    // If user is logged in, go to Live page
+    if (user) {
       navigate('/live');
       return;
     }
 
     // If user is not logged in, redirect to packages page
-    if (!user) {
-      navigate('/subscription');
-      return;
-    }
-
-    // If user is logged in but doesn't have subscription, show payment modal
-    setPaymentModalOpen(true);
+    navigate('/subscription');
   };
 
   const getButtonText = () => {
     if (loading) return "Loading...";
     if (!user) return "Sign In to Watch";
-    if (user && !subscribed) return "Subscribe to Watch Live";
     return "Watch Live";
   };
 
