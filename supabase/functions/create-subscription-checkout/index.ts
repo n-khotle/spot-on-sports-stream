@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -49,14 +50,17 @@ serve(async (req) => {
       logStep("No existing customer found");
     }
 
-    // Get the price details to verify it exists
+    // Get the price details to verify it exists and check if it's recurring
     const price = await stripe.prices.retrieve(priceId);
     if (!price.active) {
       throw new Error("Price is not active");
     }
-    logStep("Price verified", { priceId, amount: price.unit_amount, currency: price.currency });
+    
+    const isOneTimePayment = !price.recurring;
+    logStep("Price verified", { priceId, amount: price.unit_amount, currency: price.currency, isOneTime: isOneTimePayment });
 
-    const session = await stripe.checkout.sessions.create({
+    // Create checkout session with appropriate mode
+    const sessionConfig: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
@@ -65,14 +69,16 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      mode: "subscription",
+      mode: isOneTimePayment ? "payment" : "subscription",
       success_url: successUrl || `${req.headers.get("origin")}/`,
       cancel_url: cancelUrl || `${req.headers.get("origin")}/`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
-    });
+    };
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    const session = await stripe.checkout.sessions.create(sessionConfig);
+
+    logStep("Checkout session created", { sessionId: session.id, url: session.url, mode: sessionConfig.mode });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
