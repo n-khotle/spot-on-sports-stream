@@ -184,9 +184,19 @@ const Subscription = () => {
             {products.map((product) => (
               <Card key={product.id} className="relative border-2 hover:border-primary/50 transition-colors">
                 <CardHeader className="text-center">
-                  <div className="flex justify-center mb-4">
-                    {getProductIcon(product.name)}
-                  </div>
+                  {(product as any).image_url ? (
+                    <div className="flex justify-center mb-4">
+                      <img 
+                        src={(product as any).image_url} 
+                        alt={product.name}
+                        className="w-24 h-18 object-cover rounded-lg border"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex justify-center mb-4">
+                      {getProductIcon(product.name)}
+                    </div>
+                  )}
                   <CardTitle className="text-2xl">{product.name}</CardTitle>
                   {product.description && (
                     <p className="text-muted-foreground">{product.description}</p>
