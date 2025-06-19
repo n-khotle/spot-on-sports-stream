@@ -120,7 +120,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
           id="signup-phone"
           name="phoneNumber"
           type="tel"
-          placeholder="+1 (555) 123-4567"
+          placeholder="+12 (345) 678-4567"
         />
       </div>
       <div className="space-y-2">
