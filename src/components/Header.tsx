@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,15 @@ const Header = () => {
   const { user, isAdmin, signOut } = useAuth();
   const { settings } = useSiteSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    try {
+      console.log('Header: Sign out clicked');
+      await signOut();
+    } catch (error) {
+      console.error('Header: Sign out failed:', error);
+    }
+  };
   
   return (
     <header className="bg-background border-b border-border sticky top-0 z-50">
@@ -64,7 +74,7 @@ const Header = () => {
                     <DropdownMenuSeparator />
                   </>
                 )}
-                <DropdownMenuItem onClick={signOut} className="text-destructive">
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
                 </DropdownMenuItem>
