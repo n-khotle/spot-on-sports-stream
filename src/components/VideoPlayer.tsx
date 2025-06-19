@@ -416,8 +416,25 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
         </div>
       </div>
 
-      {/* Large Play Button (Mobile) */}
-      {!isPlaying && !isLoading && (
+      {/* Watch Live Button Overlay */}
+      {isLive && !isPlaying && !isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <Button
+            onClick={togglePlay}
+            size="lg"
+            className="px-8 py-4 text-lg font-semibold bg-red-600 hover:bg-red-700 text-white border-2 border-white/30 rounded-full shadow-2xl animate-pulse hover:animate-none transition-all duration-300 hover:scale-105"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+              <span>Watch Live</span>
+              <Play className="w-5 h-5 fill-white ml-1" />
+            </div>
+          </Button>
+        </div>
+      )}
+
+      {/* Large Play Button (Non-Live Content) */}
+      {!isLive && !isPlaying && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center md:hidden">
           <Button
             onClick={togglePlay}
