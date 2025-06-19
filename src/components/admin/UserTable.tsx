@@ -26,9 +26,10 @@ interface SubscriptionProduct {
 interface UserTableProps {
   onEditUser: (user: User) => void;
   onUsersUpdated: () => void;
+  refreshKey?: number;
 }
 
-const UserTable = ({ onEditUser, onUsersUpdated }: UserTableProps) => {
+const UserTable = ({ onEditUser, onUsersUpdated, refreshKey }: UserTableProps) => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +38,7 @@ const UserTable = ({ onEditUser, onUsersUpdated }: UserTableProps) => {
   useEffect(() => {
     fetchUsers();
     fetchSubscriptionProducts();
-  }, []);
+  }, [refreshKey]);
 
   const fetchUsers = async () => {
     try {

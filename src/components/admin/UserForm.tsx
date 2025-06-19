@@ -100,6 +100,11 @@ const UserForm = ({ editingUser, onUserSaved, onCancel }: UserFormProps) => {
     setIsLoading(true);
 
     try {
+      console.log('Updating user with allocated products:', {
+        userId: editingUser.id,
+        allocatedProducts: formData.allocated_subscription_products
+      });
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -110,8 +115,12 @@ const UserForm = ({ editingUser, onUserSaved, onCancel }: UserFormProps) => {
         })
         .eq('id', editingUser.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database update error:', error);
+        throw error;
+      }
 
+      console.log('User updated successfully');
       toast({
         title: "Success",
         description: "User updated successfully",

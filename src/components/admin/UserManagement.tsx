@@ -5,6 +5,7 @@ import type { User } from '@/types/admin';
 
 const UserManagement = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
@@ -12,6 +13,8 @@ const UserManagement = () => {
 
   const handleUserSaved = () => {
     setEditingUser(null);
+    // Trigger UserTable refresh
+    setRefreshKey(prev => prev + 1);
   };
 
   const handleUserCancel = () => {
@@ -19,7 +22,8 @@ const UserManagement = () => {
   };
 
   const handleUsersUpdated = () => {
-    // This can be used for any additional logic when users are updated
+    // Trigger UserTable refresh
+    setRefreshKey(prev => prev + 1);
   };
 
   return (
@@ -32,6 +36,7 @@ const UserManagement = () => {
       <UserTable 
         onEditUser={handleEditUser}
         onUsersUpdated={handleUsersUpdated}
+        refreshKey={refreshKey}
       />
     </div>
   );
