@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { UserPlus } from 'lucide-react';
 import PasswordStrengthIndicator from '@/components/PasswordStrengthIndicator';
+import ReCAPTCHA from 'react-google-recaptcha';
+import { RECAPTCHA_SITE_KEY } from '@/config/recaptcha';
 
 interface SignUpFormProps {
   onSuccess?: () => void;
@@ -20,6 +22,8 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
   const [error, setError] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [captchaValue, setCaptchaValue] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const validatePasswordMatch = () => {
     return signupPassword === confirmPassword;
@@ -42,6 +46,18 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    // Validate reCAPTCHA
+    if (!captchaValue) {
+      setError('Please complete the reCAPTCHA verification');
+      toast({
+        title: "Error",
+        description: "Please complete the reCAPTCHA verification",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
@@ -82,6 +98,9 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         description: error.message,
         variant: "destructive",
       });
+      // Reset reCAPTCHA on error
+      recaptchaRef.current?.reset();
+      setCaptchaValue(null);
     } else {
       toast({
         title: "Success",
@@ -91,6 +110,10 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
     }
     
     setIsLoading(false);
+  };
+
+  const onCaptchaChange = (value: string | null) => {
+    setCaptchaValue(value);
   };
 
   return (
@@ -154,6 +177,15 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         {confirmPassword && validatePasswordMatch() && (
           <p className="text-sm text-green-600">Passwords match</p>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <ReCAPTCHA
+          ref={recaptchaRef}
+          sitekey={RECAPTCHA_SITE_KEY}
+          onChange={onCaptchaChange}
+          theme="light"
+        />
       </div>
 
       {error && (
