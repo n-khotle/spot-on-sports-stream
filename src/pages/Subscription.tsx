@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -97,11 +98,14 @@ const Subscription = () => {
 
       if (productsError) throw productsError;
 
+      console.log("Raw products data:", productsData);
+
       const formattedProducts = (productsData || []).map(product => ({
         ...product,
-        prices: (product.subscription_prices || []).filter((price: any) => price.active)
+        prices: (product.subscription_prices || []).filter((price: any) => price.active && price.stripe_price_id)
       })).filter(product => product.prices.length > 0);
 
+      console.log("Formatted products:", formattedProducts);
       setProducts(formattedProducts);
     } catch (error) {
       console.error("Error fetching subscription products:", error);
@@ -131,7 +135,18 @@ const Subscription = () => {
       return;
     }
 
+    if (!priceId) {
+      toast({
+        title: "Error",
+        description: "Invalid price configuration",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubscribing(priceId);
+    console.log("Starting subscription with price ID:", priceId);
+    
     try {
       const { data, error } = await supabase.functions.invoke("create-subscription-checkout", {
         body: {
@@ -144,12 +159,15 @@ const Subscription = () => {
         },
       });
 
+      console.log("Checkout response:", { data, error });
+
       if (error) {
         console.error("Checkout error:", error);
-        throw error;
+        throw new Error(error.message || "Failed to create checkout session");
       }
 
       if (data?.url) {
+        console.log("Redirecting to checkout URL:", data.url);
         window.open(data.url, "_blank");
         
         toast({
@@ -157,16 +175,16 @@ const Subscription = () => {
           description: "Please complete your payment in the new tab.",
         });
         
-        // Reset subscribing state after a short delay
         setTimeout(() => setSubscribing(null), 2000);
       } else {
         throw new Error("No checkout URL received");
       }
     } catch (error) {
       console.error("Error creating checkout session:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       toast({
         title: "Error",
-        description: "Failed to start subscription process. Please try again.",
+        description: `Failed to start subscription process: ${errorMessage}`,
         variant: "destructive",
       });
       setSubscribing(null);
@@ -242,10 +260,32 @@ const Subscription = () => {
           </div>
         )}
 
+        {/* Debug info for development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <h3 className="font-semibold mb-2">Debug Info:</h3>
+            <pre className="text-xs overflow-auto">
+              {JSON.stringify({ 
+                productsCount: products.length,
+                products: products.map(p => ({
+                  id: p.id,
+                  name: p.name,
+                  priceCount: p.prices.length,
+                  prices: p.prices.map(price => ({
+                    id: price.id,
+                    stripe_price_id: price.stripe_price_id,
+                    unit_amount: price.unit_amount
+                  }))
+                }))
+              }, null, 2)}
+            </pre>
+          </div>
+        )}
+
         {products.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground text-lg mb-4">No subscription plans available at the moment.</p>
-            <p className="text-muted-foreground text-sm">Please check back later!</p>
+            <p className="text-muted-foreground text-sm">Please check back later or contact support if you need assistance.</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">

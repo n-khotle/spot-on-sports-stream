@@ -57,61 +57,20 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
-    // Get the product ID from the price
+    // Get the price from Stripe first to validate it exists
     let price;
     try {
       price = await stripe.prices.retrieve(priceId);
       logStep("Price retrieved from Stripe", { priceId, amount: price.unit_amount, currency: price.currency });
     } catch (error) {
       logStep("Error retrieving price from Stripe", { priceId, error: error.message });
-      throw new Error(`Invalid price ID: ${priceId}. Please check your Stripe configuration.`);
+      throw new Error(`Invalid price ID: ${priceId}`);
     }
     
     if (!price.active) {
       logStep("Error: Price is not active", { priceId });
       throw new Error("This price is not active in Stripe");
     }
-    
-    // Check if prices exist in database
-    logStep("Checking database for synced prices");
-    
-    const { data: dbPrices, error: priceError } = await supabaseClient
-      .from("subscription_prices")
-      .select(`
-        id,
-        product_id,
-        stripe_price_id,
-        active,
-        unit_amount,
-        currency,
-        interval,
-        subscription_products!inner(id, name)
-      `)
-      .eq("stripe_price_id", priceId);
-
-    logStep("Database query result", { dbPrices, error: priceError });
-
-    if (priceError) {
-      logStep("Database query error", { error: priceError });
-      throw new Error(`Database error: ${priceError.message}`);
-    }
-
-    if (!dbPrices || dbPrices.length === 0) {
-      logStep("No matching price found in database", { priceId });
-      throw new Error(`This product price (${priceId}) has not been synced to the database yet. Please sync the product from the admin panel first.`);
-    }
-
-    // Check if any of the found prices are active
-    const activePrices = dbPrices.filter(p => p.active);
-    if (activePrices.length === 0) {
-      logStep("Price exists but is inactive", { priceId, dbPrices });
-      throw new Error(`This price (${priceId}) exists but is not active. Please activate it in the admin panel.`);
-    }
-
-    const dbPrice = activePrices[0];
-    const productId = dbPrice.product_id;
-    const productName = (dbPrice as any).subscription_products?.name || "Unknown Product";
-    logStep("Found product in database", { productId, productName });
     
     // Check if customer exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -131,7 +90,7 @@ serve(async (req) => {
       isOneTime: isOneTimePayment 
     });
 
-    // Create checkout session with appropriate mode and metadata
+    // Create checkout session with appropriate mode
     const sessionConfig: any = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -142,14 +101,13 @@ serve(async (req) => {
         },
       ],
       mode: isOneTimePayment ? "payment" : "subscription",
-      success_url: successUrl || `${req.headers.get("origin")}/live?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: successUrl || `${req.headers.get("origin")}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${req.headers.get("origin")}/subscription?canceled=true`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
       metadata: {
         user_id: user.id,
-        product_id: productId,
-        product_name: productName
+        price_id: priceId
       },
     };
 
