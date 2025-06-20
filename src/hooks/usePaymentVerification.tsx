@@ -4,63 +4,39 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { useNavigate } from 'react-router-dom';
-import { useSubscription } from './useSubscription';
 
 export const usePaymentVerification = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { checkSubscription } = useSubscription();
   const [verifying, setVerifying] = useState(false);
 
   const verifyPayment = async (sessionId: string) => {
-    if (!sessionId) {
-      console.log('No session ID provided for verification');
-      return false;
-    }
+    if (!sessionId) return false;
     
-    console.log('Starting payment verification for session:', sessionId);
     setVerifying(true);
-    
     try {
       const { data, error } = await supabase.functions.invoke('verify-payment', {
         body: { sessionId }
       });
 
-      console.log('Payment verification response:', { data, error });
-
-      if (error) {
-        console.error('Payment verification error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (data?.success && data?.status === 'paid') {
-        console.log('Payment verification successful:', data);
-        
-        // Enhanced toast message based on payment type
-        const paymentType = data.isOneTimePayment ? 'one-time payment' : 'subscription';
-        const message = data.allocated && data.productName ? 
-          `Your ${paymentType} was successful! You now have access to ${data.productName}. Redirecting to live stream...` :
-          `Your ${paymentType} was successful!`;
-        
         toast({
           title: "Payment Successful!",
-          description: message,
+          description: data.allocated && data.productName ? 
+            `You now have access to ${data.productName}. Redirecting to live stream...` :
+            "Your payment was successful!",
         });
-        
-        // Refresh subscription status after successful payment
-        console.log('Refreshing subscription status...');
-        await checkSubscription();
         
         // Always redirect to live page after successful payment
         setTimeout(() => {
-          console.log('Redirecting to live page');
           navigate('/live');
         }, 1500);
         
         return true;
       } else {
-        console.log('Payment verification pending or failed:', data);
         toast({
           title: "Payment Verification",
           description: "Your payment is being processed. Please wait a moment.",
@@ -81,108 +57,20 @@ export const usePaymentVerification = () => {
     }
   };
 
-  const handleSuccessPayment = async () => {
-    if (!user) {
-      console.log('No user found for success payment handling');
-      return false;
-    }
-
-    console.log('Handling success=true payment for user:', user.email);
-    setVerifying(true);
-
-    try {
-      // Call the verify-payment function with special success handling
-      const { data, error } = await supabase.functions.invoke('verify-payment', {
-        body: { 
-          successPayment: true,
-          userEmail: user.email 
-        }
-      });
-
-      console.log('Success payment verification response:', { data, error });
-
-      if (error) {
-        console.error('Success payment verification error:', error);
-        throw error;
-      }
-
-      if (data?.success) {
-        console.log('Success payment verification successful:', data);
-        
-        // Enhanced toast message for success payments (could be subscription or one-time)
-        const paymentType = data.isOneTimePayment ? 'payment' : 'subscription';
-        const message = `Your ${paymentType} has been activated successfully. Checking your access...`;
-        
-        toast({
-          title: "Payment Successful!",
-          description: message,
-        });
-        
-        // Refresh subscription status after successful payment
-        console.log('Refreshing subscription status...');
-        await checkSubscription();
-        
-        // Redirect to live page after successful payment
-        setTimeout(() => {
-          console.log('Redirecting to live page');
-          navigate('/live');
-        }, 1500);
-        
-        return true;
-      } else {
-        console.log('Success payment verification failed:', data);
-        return false;
-      }
-    } catch (error: any) {
-      console.error('Success payment verification error:', error);
-      toast({
-        title: "Verification Error",
-        description: "There was an issue processing your payment. Please contact support.",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setVerifying(false);
-    }
-  };
-
   // Auto-verify payment if session_id is in URL params
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get('session_id');
-    const success = urlParams.get('success');
     
-    console.log('URL params check:', { sessionId, success, user: !!user });
-    
-    if (user && (sessionId || success === 'true')) {
-      console.log('Payment verification triggered:', { sessionId, success });
-      
-      if (sessionId) {
-        console.log('Verifying payment with session ID:', sessionId);
-        verifyPayment(sessionId).then((verificationSuccess) => {
-          console.log('Payment verification result:', verificationSuccess);
-          if (verificationSuccess) {
-            // Clean up URL
-            const url = new URL(window.location.href);
-            url.searchParams.delete('session_id');
-            url.searchParams.delete('success');
-            window.history.replaceState({}, '', url.toString());
-            console.log('URL cleaned up');
-          }
-        });
-      } else if (success === 'true') {
-        console.log('Handling success=true parameter for any payment type');
-        handleSuccessPayment().then((verificationSuccess) => {
-          console.log('Success payment handling result:', verificationSuccess);
-          if (verificationSuccess) {
-            // Clean up URL
-            const url = new URL(window.location.href);
-            url.searchParams.delete('success');
-            window.history.replaceState({}, '', url.toString());
-            console.log('URL cleaned up');
-          }
-        });
-      }
+    if (sessionId && user) {
+      verifyPayment(sessionId).then((success) => {
+        if (success) {
+          // Clean up URL
+          const url = new URL(window.location.href);
+          url.searchParams.delete('session_id');
+          window.history.replaceState({}, '', url.toString());
+        }
+      });
     }
   }, [user]);
 
