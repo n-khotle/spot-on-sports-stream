@@ -43,6 +43,7 @@ serve(async (req) => {
     let customerEmail = userEmail;
     let session = null;
     let isOneTimePayment = false;
+    let isMobileMoneyPayment = false;
 
     // Handle success=true scenario vs session ID scenario
     if (successPayment && userEmail) {
@@ -53,7 +54,7 @@ serve(async (req) => {
       
       // Retrieve the checkout session with expanded data
       session = await stripe.checkout.sessions.retrieve(sessionId, {
-        expand: ['line_items', 'line_items.data.price', 'subscription', 'customer']
+        expand: ['line_items', 'line_items.data.price', 'line_items.data.price.product', 'subscription', 'customer']
       });
       
       logStep("Retrieved checkout session", { 
@@ -64,6 +65,18 @@ serve(async (req) => {
         customerEmail: session.customer_email,
         lineItemsCount: session.line_items?.data?.length || 0
       });
+
+      // Check for mobile money product ID in line items
+      if (session.line_items?.data) {
+        for (const lineItem of session.line_items.data) {
+          const product = lineItem.price?.product;
+          if (product && typeof product === 'object' && product.id === 'prod_SX3PYQDsxXnlAG') {
+            isMobileMoneyPayment = true;
+            logStep("Mobile money payment detected", { productId: product.id });
+            break;
+          }
+        }
+      }
 
       if (session.payment_status !== 'paid') {
         logStep("Payment not completed", { status: session.payment_status });
@@ -78,7 +91,7 @@ serve(async (req) => {
 
       // Determine if this is a one-time payment
       isOneTimePayment = session.mode === 'payment';
-      logStep("Payment type determined", { mode: session.mode, isOneTimePayment });
+      logStep("Payment type determined", { mode: session.mode, isOneTimePayment, isMobileMoneyPayment });
 
       // Get customer email - try multiple sources
       customerEmail = session.customer_email;
@@ -136,90 +149,79 @@ serve(async (req) => {
         stripeCustomerId = customers.data[0].id;
         logStep("Found Stripe customer for success payment", { customerId: stripeCustomerId });
         
-        // For success=true payments, check for both subscriptions and one-time payments
-        // First check for active subscriptions
-        const subscriptions = await stripe.subscriptions.list({
+        // For mobile money payments or success=true payments, use Basic access
+        productName = "Basic Access";
+        subscriptionTier = "Basic";
+        
+        // Check for mobile money payment by looking at recent payment intents
+        const paymentIntents = await stripe.paymentIntents.list({
           customer: stripeCustomerId,
-          status: 'active',
-          limit: 1,
+          limit: 10,
         });
         
-        if (subscriptions.data.length > 0) {
-          const subscription = subscriptions.data[0];
-          subscriptionEnd = new Date(subscription.current_period_end * 1000);
-          
-          logStep("Found active subscription for success payment", { 
-            subscriptionId: subscription.id,
-            endDate: subscriptionEnd.toISOString()
-          });
-          
-          // Get the price to determine tier and product
-          const priceId = subscription.items.data[0].price.id;
-          const price = await stripe.prices.retrieve(priceId);
-          
-          // Find the subscription product associated with this price
-          const { data: subscriptionPrice, error: priceError } = await supabaseClient
-            .from('subscription_prices')
-            .select(`
-              *,
-              subscription_products!inner(*)
-            `)
-            .eq('stripe_price_id', priceId)
+        // Look for recent mobile money payments
+        for (const pi of paymentIntents.data) {
+          if (pi.status === 'succeeded' && 
+              new Date(pi.created * 1000) > new Date(Date.now() - 24 * 60 * 60 * 1000)) {
+            
+            // Check if this payment intent is for mobile money product
+            const charges = await stripe.charges.list({ payment_intent: pi.id, limit: 1 });
+            if (charges.data.length > 0) {
+              const charge = charges.data[0];
+              
+              // Try to find associated product from metadata or description
+              const isMobileMoney = charge.metadata?.product_id === 'prod_SX3PYQDsxXnlAG' ||
+                                   charge.description?.includes('Mobile Money') ||
+                                   charge.description?.includes('Basic Access');
+              
+              if (isMobileMoney) {
+                logStep("Found recent mobile money payment", { 
+                  paymentIntentId: pi.id,
+                  amount: pi.amount,
+                  created: new Date(pi.created * 1000).toISOString()
+                });
+                isMobileMoneyPayment = true;
+                break;
+              }
+            }
+          }
+        }
+        
+        // For mobile money payments, find or create a basic product
+        if (isMobileMoneyPayment) {
+          // Try to find the mobile money subscription product
+          const { data: mobileMoneyProduct, error: productError } = await supabaseClient
+            .from('subscription_products')
+            .select('*')
+            .eq('stripe_product_id', 'prod_SX3PYQDsxXnlAG')
+            .eq('active', true)
             .single();
 
-          if (subscriptionPrice && (subscriptionPrice as any).subscription_products) {
-            const product = (subscriptionPrice as any).subscription_products;
-            productName = product.name;
-            subscriptionTier = product.name;
-            
-            logStep("Found subscription product for success payment", { 
-              productId: product.id, 
-              productName 
+          if (mobileMoneyProduct) {
+            logStep("Found mobile money product", { 
+              productId: mobileMoneyProduct.id, 
+              productName: mobileMoneyProduct.name 
             });
 
-            // Allocate product to user profile
+            // Allocate mobile money product to user profile
             const { error: allocateError } = await supabaseClient
               .rpc('allocate_product_to_user', {
                 target_user_id: profile.user_id,
-                product_id: product.id
+                product_id: mobileMoneyProduct.id
               });
 
             if (allocateError) {
-              logStep("ERROR allocating product", { error: allocateError.message });
+              logStep("ERROR allocating mobile money product", { error: allocateError.message });
             } else {
-              logStep("Successfully allocated product to user");
+              logStep("Successfully allocated mobile money product to user");
               productAllocated = true;
+              productName = mobileMoneyProduct.name;
             }
-          }
-        } else {
-          // No active subscription found, check for recent one-time payments
-          logStep("No active subscription found, checking for recent one-time payments");
-          
-          // Check for recent payment intents (one-time payments)
-          const paymentIntents = await stripe.paymentIntents.list({
-            customer: stripeCustomerId,
-            limit: 10,
-          });
-          
-          const recentPayment = paymentIntents.data.find(pi => 
-            pi.status === 'succeeded' && 
-            new Date(pi.created * 1000) > new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
-          );
-          
-          if (recentPayment) {
-            logStep("Found recent one-time payment for success payment", { 
-              paymentIntentId: recentPayment.id,
-              amount: recentPayment.amount,
-              created: new Date(recentPayment.created * 1000).toISOString()
-            });
+          } else {
+            logStep("Mobile money product not found, using default", { error: productError?.message });
             
-            // For one-time payments, use default Basic tier and next day expiration
-            productName = "Basic Access";
-            subscriptionTier = "Basic";
-            // subscriptionEnd is already set to next day above
-            
-            // Try to find a default product or the first available product
-            const { data: defaultProduct, error: defaultProductError } = await supabaseClient
+            // Fall back to any available active product
+            const { data: defaultProduct } = await supabaseClient
               .from('subscription_products')
               .select('*')
               .eq('active', true)
@@ -227,22 +229,18 @@ serve(async (req) => {
               .single();
 
             if (defaultProduct) {
-              logStep("Found default product for one-time payment", { 
+              logStep("Using default product for mobile money", { 
                 productId: defaultProduct.id, 
                 productName: defaultProduct.name 
               });
 
-              // Allocate product to user profile
               const { error: allocateError } = await supabaseClient
                 .rpc('allocate_product_to_user', {
                   target_user_id: profile.user_id,
                   product_id: defaultProduct.id
                 });
 
-              if (allocateError) {
-                logStep("ERROR allocating default product", { error: allocateError.message });
-              } else {
-                logStep("Successfully allocated default product to user");
+              if (!allocateError) {
                 productAllocated = true;
                 productName = defaultProduct.name;
               }
@@ -310,8 +308,8 @@ serve(async (req) => {
           }
         }
       } else if (session.mode === 'payment') {
-        // Handle one-time payment from session
-        logStep("Processing one-time payment from session");
+        // Handle one-time payment from session (including mobile money)
+        logStep("Processing one-time payment from session", { isMobileMoneyPayment });
         
         const lineItem = session.line_items?.data[0];
         const amount = lineItem?.amount_total || 0;
@@ -319,41 +317,75 @@ serve(async (req) => {
         logStep("One-time payment details from session", {
           amount,
           currency: session.currency,
-          totalAmount: session.amount_total
+          totalAmount: session.amount_total,
+          isMobileMoneyPayment
         });
         
-        // For one-time payments, use Basic tier and next day expiration
-        productName = "Basic Access";
-        subscriptionTier = "Basic";
-        // subscriptionEnd is already set to next day above
-        
-        // Try to find a default product or the first available product for one-time payments
-        const { data: defaultProduct, error: defaultProductError } = await supabaseClient
-          .from('subscription_products')
-          .select('*')
-          .eq('active', true)
-          .limit(1)
-          .single();
+        // For mobile money payments, find the specific product
+        if (isMobileMoneyPayment) {
+          const { data: mobileMoneyProduct, error: productError } = await supabaseClient
+            .from('subscription_products')
+            .select('*')
+            .eq('stripe_product_id', 'prod_SX3PYQDsxXnlAG')
+            .eq('active', true)
+            .single();
 
-        if (defaultProduct) {
-          logStep("Found default product for one-time payment from session", { 
-            productId: defaultProduct.id, 
-            productName: defaultProduct.name 
-          });
-
-          // Allocate product to user profile
-          const { error: allocateError } = await supabaseClient
-            .rpc('allocate_product_to_user', {
-              target_user_id: profile.user_id,
-              product_id: defaultProduct.id
+          if (mobileMoneyProduct) {
+            logStep("Found mobile money product from session", { 
+              productId: mobileMoneyProduct.id, 
+              productName: mobileMoneyProduct.name 
             });
 
-          if (allocateError) {
-            logStep("ERROR allocating default product from session", { error: allocateError.message });
+            // Allocate mobile money product to user profile
+            const { error: allocateError } = await supabaseClient
+              .rpc('allocate_product_to_user', {
+                target_user_id: profile.user_id,
+                product_id: mobileMoneyProduct.id
+              });
+
+            if (allocateError) {
+              logStep("ERROR allocating mobile money product from session", { error: allocateError.message });
+            } else {
+              logStep("Successfully allocated mobile money product to user from session");
+              productAllocated = true;
+              productName = mobileMoneyProduct.name;
+              subscriptionTier = mobileMoneyProduct.name;
+            }
           } else {
-            logStep("Successfully allocated default product to user from session");
-            productAllocated = true;
-            productName = defaultProduct.name;
+            logStep("Mobile money product not found in database", { error: productError?.message });
+            productName = "Mobile Money Access";
+            subscriptionTier = "Basic";
+          }
+        } else {
+          // For other one-time payments, use default Basic access
+          productName = "Basic Access";
+          subscriptionTier = "Basic";
+          
+          // Try to find a default product for one-time payments
+          const { data: defaultProduct } = await supabaseClient
+            .from('subscription_products')
+            .select('*')
+            .eq('active', true)
+            .limit(1)
+            .single();
+
+          if (defaultProduct) {
+            logStep("Found default product for one-time payment from session", { 
+              productId: defaultProduct.id, 
+              productName: defaultProduct.name 
+            });
+
+            const { error: allocateError } = await supabaseClient
+              .rpc('allocate_product_to_user', {
+                target_user_id: profile.user_id,
+                product_id: defaultProduct.id
+              });
+
+            if (!allocateError) {
+              logStep("Successfully allocated default product to user from session");
+              productAllocated = true;
+              productName = defaultProduct.name;
+            }
           }
         }
       }
@@ -415,7 +447,8 @@ serve(async (req) => {
       userId: profile.user_id,
       subscriptionTier,
       subscriptionEnd: subscriptionEnd.toISOString(),
-      isOneTimePayment: isOneTimePayment || successPayment
+      isOneTimePayment: isOneTimePayment || successPayment,
+      isMobileMoneyPayment
     };
 
     logStep("Payment verification completed", result);
