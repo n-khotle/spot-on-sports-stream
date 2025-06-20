@@ -4,11 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useSubscription } from './useSubscription';
 
 export const usePaymentVerification = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { checkSubscription } = useSubscription();
   const [verifying, setVerifying] = useState(false);
 
   const verifyPayment = async (sessionId: string) => {
@@ -29,6 +31,9 @@ export const usePaymentVerification = () => {
             `You now have access to ${data.productName}. Redirecting to live stream...` :
             "Your payment was successful!",
         });
+        
+        // Refresh subscription status after successful payment
+        await checkSubscription();
         
         // Always redirect to live page after successful payment
         setTimeout(() => {
@@ -61,16 +66,40 @@ export const usePaymentVerification = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get('session_id');
+    const success = urlParams.get('success');
     
-    if (sessionId && user) {
-      verifyPayment(sessionId).then((success) => {
-        if (success) {
-          // Clean up URL
-          const url = new URL(window.location.href);
-          url.searchParams.delete('session_id');
-          window.history.replaceState({}, '', url.toString());
-        }
-      });
+    if ((sessionId || success === 'true') && user) {
+      console.log('Payment verification triggered:', { sessionId, success });
+      
+      if (sessionId) {
+        verifyPayment(sessionId).then((verificationSuccess) => {
+          if (verificationSuccess) {
+            // Clean up URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete('session_id');
+            url.searchParams.delete('success');
+            window.history.replaceState({}, '', url.toString());
+          }
+        });
+      } else if (success === 'true') {
+        // Handle cases where we only have success=true parameter
+        toast({
+          title: "Payment Successful!",
+          description: "Your subscription has been activated. Checking your access...",
+        });
+        
+        // Refresh subscription status
+        checkSubscription().then(() => {
+          setTimeout(() => {
+            navigate('/live');
+          }, 1500);
+        });
+        
+        // Clean up URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('success');
+        window.history.replaceState({}, '', url.toString());
+      }
     }
   }, [user]);
 
