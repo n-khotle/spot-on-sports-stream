@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +25,35 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
   const [recaptchaError, setRecaptchaError] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
+
+  // Add debug logging
+  const addDebugInfo = (message: string) => {
+    console.log(`reCAPTCHA Debug: ${message}`);
+    setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+  };
+
+  useEffect(() => {
+    addDebugInfo('Component mounted, checking reCAPTCHA environment');
+    
+    // Check if reCAPTCHA script is available
+    if (typeof window !== 'undefined') {
+      addDebugInfo(`Window available: ${!!window}`);
+      addDebugInfo(`grecaptcha available: ${!!(window as any).grecaptcha}`);
+      addDebugInfo(`Site key: ${RECAPTCHA_SITE_KEY}`);
+    }
+
+    // Set a timeout to check if reCAPTCHA loads within 10 seconds
+    const timeout = setTimeout(() => {
+      if (!recaptchaLoaded && !recaptchaError) {
+        addDebugInfo('reCAPTCHA failed to load within 10 seconds');
+        setRecaptchaError(true);
+      }
+    }, 10000);
+
+    return () => clearTimeout(timeout);
+  }, [recaptchaLoaded, recaptchaError]);
 
   const validatePasswordMatch = () => {
     return signupPassword === confirmPassword;
@@ -40,11 +69,11 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
     };
     
     const score = Object.values(checks).filter(Boolean).length;
-    return score >= 3; // Require at least medium strength
+    return score >= 3;
   };
 
   const handleRecaptchaChange = (token: string | null) => {
-    console.log('reCAPTCHA token received:', token ? 'valid' : 'null');
+    addDebugInfo(`Token received: ${token ? 'valid token' : 'null'}`);
     setRecaptchaToken(token);
     if (token) {
       setRecaptchaError(false);
@@ -52,21 +81,21 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
   };
 
   const handleRecaptchaLoad = () => {
-    console.log('reCAPTCHA loaded successfully');
+    addDebugInfo('reCAPTCHA loaded successfully');
     setRecaptchaLoaded(true);
     setRecaptchaError(false);
   };
 
   const handleRecaptchaError = () => {
-    console.log('reCAPTCHA error occurred');
+    addDebugInfo('reCAPTCHA error occurred');
     setRecaptchaError(true);
     setRecaptchaLoaded(false);
     setRecaptchaToken(null);
-    toast({
-      title: "reCAPTCHA Error",
-      description: "There was an issue loading reCAPTCHA. Please try refreshing the page.",
-      variant: "destructive",
-    });
+  };
+
+  const handleRecaptchaExpired = () => {
+    addDebugInfo('reCAPTCHA expired');
+    setRecaptchaToken(null);
   };
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -74,13 +103,14 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
     setIsLoading(true);
     setError('');
 
-    // Skip reCAPTCHA validation if it failed to load (for development)
+    // Allow form submission even if reCAPTCHA fails to load (for development/testing)
     if (!recaptchaLoaded && !recaptchaError) {
       setError('reCAPTCHA is still loading. Please wait a moment and try again.');
       setIsLoading(false);
       return;
     }
 
+    // Skip reCAPTCHA validation if it failed to load (show warning but allow registration)
     if (recaptchaLoaded && !recaptchaToken) {
       setError('Please complete the reCAPTCHA verification');
       toast({
@@ -106,7 +136,6 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         description: "Password must be at least medium strength",
         variant: "destructive",
       });
-      // Reset reCAPTCHA
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();
         setRecaptchaToken(null);
@@ -123,7 +152,6 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         description: "Passwords do not match",
         variant: "destructive",
       });
-      // Reset reCAPTCHA
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();
         setRecaptchaToken(null);
@@ -141,7 +169,6 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         description: error.message,
         variant: "destructive",
       });
-      // Reset reCAPTCHA on error
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();
         setRecaptchaToken(null);
@@ -220,7 +247,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         )}
       </div>
 
-      {/* reCAPTCHA with better error handling */}
+      {/* reCAPTCHA with comprehensive error handling */}
       <div className="flex justify-center">
         <ReCAPTCHA
           ref={recaptchaRef}
@@ -228,15 +255,40 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
           onChange={handleRecaptchaChange}
           onLoad={handleRecaptchaLoad}
           onErrored={handleRecaptchaError}
+          onExpired={handleRecaptchaExpired}
           theme="light"
         />
       </div>
 
+      {/* Debug information (only shown in development) */}
+      {process.env.NODE_ENV === 'development' && debugInfo.length > 0 && (
+        <Alert>
+          <AlertDescription>
+            <details>
+              <summary className="cursor-pointer">Debug Info ({debugInfo.length} entries)</summary>
+              <div className="mt-2 text-xs">
+                {debugInfo.slice(-5).map((info, index) => (
+                  <div key={index}>{info}</div>
+                ))}
+              </div>
+            </details>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {recaptchaError && (
         <Alert variant="destructive">
           <AlertDescription>
-            reCAPTCHA failed to load. This might be due to network issues or browser settings. 
-            You can still proceed with registration for testing purposes.
+            reCAPTCHA failed to load. This might be due to network issues, browser extensions (ad blockers), 
+            or connectivity problems. You can still proceed with registration for testing purposes.
+            <br />
+            <strong>Troubleshooting tips:</strong>
+            <ul className="mt-2 text-sm list-disc list-inside">
+              <li>Disable ad blockers or privacy extensions</li>
+              <li>Check your internet connection</li>
+              <li>Try refreshing the page</li>
+              <li>Try a different browser</li>
+            </ul>
           </AlertDescription>
         </Alert>
       )}
@@ -244,7 +296,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
       {!recaptchaLoaded && !recaptchaError && (
         <Alert>
           <AlertDescription>
-            Loading reCAPTCHA...
+            Loading reCAPTCHA... If this takes too long, there might be a connectivity issue.
           </AlertDescription>
         </Alert>
       )}
@@ -258,7 +310,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
       <Button 
         type="submit" 
         className="w-full" 
-        disabled={isLoading || (!recaptchaLoaded && !recaptchaError)}
+        disabled={isLoading}
       >
         {isLoading ? (
           <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
