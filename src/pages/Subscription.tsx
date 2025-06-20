@@ -188,7 +188,7 @@ const Subscription = () => {
       const { data, error } = await supabase.functions.invoke("create-subscription-checkout", {
         body: {
           priceId,
-          successUrl: 'http://localhost:8080/live',
+          successUrl: 'https://www.spoton.co.bw/live',
           cancelUrl: `${window.location.origin}/subscription?canceled=true`,
         },
         headers: {
