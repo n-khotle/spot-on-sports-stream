@@ -1,8 +1,9 @@
 
-// reCAPTCHA configuration
-export const RECAPTCHA_SITE_KEY = "6LcS3WcrAAAAAMXVE6M4I8yHLgMkA5XnUJLJCKZ9";
 
-// For production, make sure to:
-// 1. Add your domain(s) to the authorized domains list in Google reCAPTCHA admin
-// 2. Verify the site key is correctly configured for your domain
-// 3. Ensure the corresponding secret key is properly configured on your backend
+// reCAPTCHA configuration - TEMPORARY TEST KEY
+export const RECAPTCHA_SITE_KEY = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"; // Google's test key
+
+// This is Google's official test key that works on all domains for testing
+// If this works, then your production key needs domain authorization
+// To fix: Go to https://www.google.com/recaptcha/admin and add your domains
+
