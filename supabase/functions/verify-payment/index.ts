@@ -116,7 +116,7 @@ serve(async (req) => {
             stripe_customer_id: session.customer,
             subscribed: true,
             subscription_tier: productName,
-            subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            subscription_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'email' });
 
