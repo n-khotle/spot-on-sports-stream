@@ -77,6 +77,67 @@ export const usePaymentVerification = () => {
     }
   };
 
+  const handleSuccessPayment = async () => {
+    if (!user) {
+      console.log('No user found for success payment handling');
+      return false;
+    }
+
+    console.log('Handling success=true payment for user:', user.email);
+    setVerifying(true);
+
+    try {
+      // Call the verify-payment function with special success handling
+      const { data, error } = await supabase.functions.invoke('verify-payment', {
+        body: { 
+          successPayment: true,
+          userEmail: user.email 
+        }
+      });
+
+      console.log('Success payment verification response:', { data, error });
+
+      if (error) {
+        console.error('Success payment verification error:', error);
+        throw error;
+      }
+
+      if (data?.success) {
+        console.log('Success payment verification successful:', data);
+        
+        toast({
+          title: "Payment Successful!",
+          description: "Your subscription has been activated. Checking your access...",
+        });
+        
+        // Refresh subscription status after successful payment
+        console.log('Refreshing subscription status...');
+        await checkSubscription();
+        
+        // Redirect to live page after successful payment
+        setTimeout(() => {
+          console.log('Redirecting to live page');
+          navigate('/live');
+        }, 1500);
+        
+        return true;
+      } else {
+        console.log('Success payment verification failed:', data);
+        return false;
+      }
+    } catch (error: any) {
+      console.error('Success payment verification error:', error);
+      toast({
+        title: "Verification Error",
+        description: "There was an issue processing your payment. Please contact support.",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   // Auto-verify payment if session_id is in URL params
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -85,7 +146,7 @@ export const usePaymentVerification = () => {
     
     console.log('URL params check:', { sessionId, success, user: !!user });
     
-    if ((sessionId || success === 'true') && user) {
+    if (user && (sessionId || success === 'true')) {
       console.log('Payment verification triggered:', { sessionId, success });
       
       if (sessionId) {
@@ -103,23 +164,16 @@ export const usePaymentVerification = () => {
         });
       } else if (success === 'true') {
         console.log('Handling success=true parameter');
-        // Handle cases where we only have success=true parameter
-        toast({
-          title: "Payment Successful!",
-          description: "Your subscription has been activated. Checking your access...",
+        handleSuccessPayment().then((verificationSuccess) => {
+          console.log('Success payment handling result:', verificationSuccess);
+          if (verificationSuccess) {
+            // Clean up URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete('success');
+            window.history.replaceState({}, '', url.toString());
+            console.log('URL cleaned up');
+          }
         });
-        
-        // Refresh subscription status
-        checkSubscription().then(() => {
-          setTimeout(() => {
-            navigate('/live');
-          }, 1500);
-        });
-        
-        // Clean up URL
-        const url = new URL(window.location.href);
-        url.searchParams.delete('success');
-        window.history.replaceState({}, '', url.toString());
       }
     }
   }, [user]);
