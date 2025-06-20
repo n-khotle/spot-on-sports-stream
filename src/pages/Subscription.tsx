@@ -199,15 +199,15 @@ const Subscription = () => {
       console.log("Checkout response:", { data, error });
 
       // assign subscription status to subscribed user 
-      if (error === null) {
-        const { data: productsData, error: productsError } = await supabase
-        .from("subscription_products")
-        .select(`
-          *,
-          subscription_prices (*)
-        `)
-        .eq("active", true);
-      }
+      // if (error === null) {
+      //   const { data: productsData, error: productsError } = await supabase
+      //   .from("subscription_products")
+      //   .select(`
+      //     *,
+      //     subscription_prices (*)
+      //   `)
+      //   .eq("active", true);
+      // }
     
       if (error) {
         console.error("Checkout error:", error);
