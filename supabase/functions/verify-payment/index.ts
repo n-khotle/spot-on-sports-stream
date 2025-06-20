@@ -42,6 +42,7 @@ serve(async (req) => {
 
     let customerEmail = userEmail;
     let session = null;
+    let isOneTimePayment = false;
 
     // Handle success=true scenario vs session ID scenario
     if (successPayment && userEmail) {
@@ -74,6 +75,10 @@ serve(async (req) => {
           status: 200,
         });
       }
+
+      // Determine if this is a one-time payment
+      isOneTimePayment = session.mode === 'payment';
+      logStep("Payment type determined", { mode: session.mode, isOneTimePayment });
 
       // Get customer email - try multiple sources
       customerEmail = session.customer_email;
@@ -113,7 +118,7 @@ serve(async (req) => {
 
     logStep("Found user profile", { userId: profile.user_id });
 
-    // For success=true payments, we need to find the customer and their recent subscription
+    // Initialize default values for database updates
     let stripeCustomerId = null;
     let subscriptionTier = "Basic";
     let subscriptionEnd = new Date();
@@ -129,9 +134,10 @@ serve(async (req) => {
       const customers = await stripe.customers.list({ email: customerEmail, limit: 1 });
       if (customers.data.length > 0) {
         stripeCustomerId = customers.data[0].id;
-        logStep("Found Stripe customer", { customerId: stripeCustomerId });
+        logStep("Found Stripe customer for success payment", { customerId: stripeCustomerId });
         
-        // Find their most recent active subscription
+        // For success=true payments, check for both subscriptions and one-time payments
+        // First check for active subscriptions
         const subscriptions = await stripe.subscriptions.list({
           customer: stripeCustomerId,
           status: 'active',
@@ -142,7 +148,7 @@ serve(async (req) => {
           const subscription = subscriptions.data[0];
           subscriptionEnd = new Date(subscription.current_period_end * 1000);
           
-          logStep("Found active subscription", { 
+          logStep("Found active subscription for success payment", { 
             subscriptionId: subscription.id,
             endDate: subscriptionEnd.toISOString()
           });
@@ -164,7 +170,7 @@ serve(async (req) => {
           if (subscriptionPrice && (subscriptionPrice as any).subscription_products) {
             const product = (subscriptionPrice as any).subscription_products;
             productName = product.name;
-            subscriptionTier = product.name; // Use product name as tier
+            subscriptionTier = product.name;
             
             logStep("Found subscription product for success payment", { 
               productId: product.id, 
@@ -185,14 +191,73 @@ serve(async (req) => {
               productAllocated = true;
             }
           }
+        } else {
+          // No active subscription found, check for recent one-time payments
+          logStep("No active subscription found, checking for recent one-time payments");
+          
+          // Check for recent payment intents (one-time payments)
+          const paymentIntents = await stripe.paymentIntents.list({
+            customer: stripeCustomerId,
+            limit: 10,
+          });
+          
+          const recentPayment = paymentIntents.data.find(pi => 
+            pi.status === 'succeeded' && 
+            new Date(pi.created * 1000) > new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+          );
+          
+          if (recentPayment) {
+            logStep("Found recent one-time payment for success payment", { 
+              paymentIntentId: recentPayment.id,
+              amount: recentPayment.amount,
+              created: new Date(recentPayment.created * 1000).toISOString()
+            });
+            
+            // For one-time payments, use default Basic tier and next day expiration
+            productName = "Basic Access";
+            subscriptionTier = "Basic";
+            // subscriptionEnd is already set to next day above
+            
+            // Try to find a default product or the first available product
+            const { data: defaultProduct, error: defaultProductError } = await supabaseClient
+              .from('subscription_products')
+              .select('*')
+              .eq('active', true)
+              .limit(1)
+              .single();
+
+            if (defaultProduct) {
+              logStep("Found default product for one-time payment", { 
+                productId: defaultProduct.id, 
+                productName: defaultProduct.name 
+              });
+
+              // Allocate product to user profile
+              const { error: allocateError } = await supabaseClient
+                .rpc('allocate_product_to_user', {
+                  target_user_id: profile.user_id,
+                  product_id: defaultProduct.id
+                });
+
+              if (allocateError) {
+                logStep("ERROR allocating default product", { error: allocateError.message });
+              } else {
+                logStep("Successfully allocated default product to user");
+                productAllocated = true;
+                productName = defaultProduct.name;
+              }
+            }
+          }
         }
       } else {
         logStep("No Stripe customer found for success payment", { email: customerEmail });
-        // For success=true, we still update the subscription status even without finding Stripe customer
-        subscriptionEnd.setDate(subscriptionEnd.getDate() + 1); // Next day as requested
+        // For success=true without Stripe customer, still update subscription status
+        productName = "Basic Access";
       }
     } else if (session) {
-      // Handle subscription mode from session
+      // Handle payments from session (both subscription and one-time)
+      stripeCustomerId = session.customer as string;
+      
       if (session.mode === 'subscription' && session.subscription) {
         logStep("Processing subscription payment from session");
         
@@ -200,7 +265,6 @@ serve(async (req) => {
         const lineItem = session.line_items?.data[0];
         const priceId = lineItem?.price?.id;
         
-        stripeCustomerId = session.customer as string;
         subscriptionEnd = new Date(subscription.current_period_end * 1000);
         
         logStep("Subscription details from session", {
@@ -223,7 +287,7 @@ serve(async (req) => {
           if (subscriptionPrice && (subscriptionPrice as any).subscription_products) {
             const product = (subscriptionPrice as any).subscription_products;
             productName = product.name;
-            subscriptionTier = product.name; // Use product name as tier
+            subscriptionTier = product.name;
             
             logStep("Found subscription product from session", { 
               productId: product.id, 
@@ -245,15 +309,62 @@ serve(async (req) => {
             }
           }
         }
+      } else if (session.mode === 'payment') {
+        // Handle one-time payment from session
+        logStep("Processing one-time payment from session");
+        
+        const lineItem = session.line_items?.data[0];
+        const amount = lineItem?.amount_total || 0;
+        
+        logStep("One-time payment details from session", {
+          amount,
+          currency: session.currency,
+          totalAmount: session.amount_total
+        });
+        
+        // For one-time payments, use Basic tier and next day expiration
+        productName = "Basic Access";
+        subscriptionTier = "Basic";
+        // subscriptionEnd is already set to next day above
+        
+        // Try to find a default product or the first available product for one-time payments
+        const { data: defaultProduct, error: defaultProductError } = await supabaseClient
+          .from('subscription_products')
+          .select('*')
+          .eq('active', true)
+          .limit(1)
+          .single();
+
+        if (defaultProduct) {
+          logStep("Found default product for one-time payment from session", { 
+            productId: defaultProduct.id, 
+            productName: defaultProduct.name 
+          });
+
+          // Allocate product to user profile
+          const { error: allocateError } = await supabaseClient
+            .rpc('allocate_product_to_user', {
+              target_user_id: profile.user_id,
+              product_id: defaultProduct.id
+            });
+
+          if (allocateError) {
+            logStep("ERROR allocating default product from session", { error: allocateError.message });
+          } else {
+            logStep("Successfully allocated default product to user from session");
+            productAllocated = true;
+            productName = defaultProduct.name;
+          }
+        }
       }
     }
 
-    // Update subscribers table as requested
+    // Update subscribers table as requested - ALWAYS set subscribed to TRUE
     const subscriberUpdate = {
       user_id: profile.user_id,
       email: customerEmail,
       stripe_customer_id: stripeCustomerId,
-      subscribed: true, // Set to TRUE as requested
+      subscribed: true, // Always set to TRUE as requested
       subscription_tier: subscriptionTier, // Set to "Basic" or product name
       subscription_end: subscriptionEnd.toISOString(), // Set to next day as requested
       updated_at: new Date().toISOString(),
@@ -300,10 +411,11 @@ serve(async (req) => {
       status: 'paid',
       allocated: productAllocated,
       subscriptionUpdated,
-      productName: productName || "Basic Subscription",
+      productName: productName || "Basic Access",
       userId: profile.user_id,
       subscriptionTier,
-      subscriptionEnd: subscriptionEnd.toISOString()
+      subscriptionEnd: subscriptionEnd.toISOString(),
+      isOneTimePayment: isOneTimePayment || successPayment
     };
 
     logStep("Payment verification completed", result);

@@ -37,11 +37,15 @@ export const usePaymentVerification = () => {
       if (data?.success && data?.status === 'paid') {
         console.log('Payment verification successful:', data);
         
+        // Enhanced toast message based on payment type
+        const paymentType = data.isOneTimePayment ? 'one-time payment' : 'subscription';
+        const message = data.allocated && data.productName ? 
+          `Your ${paymentType} was successful! You now have access to ${data.productName}. Redirecting to live stream...` :
+          `Your ${paymentType} was successful!`;
+        
         toast({
           title: "Payment Successful!",
-          description: data.allocated && data.productName ? 
-            `You now have access to ${data.productName}. Redirecting to live stream...` :
-            "Your payment was successful!",
+          description: message,
         });
         
         // Refresh subscription status after successful payment
@@ -105,9 +109,13 @@ export const usePaymentVerification = () => {
       if (data?.success) {
         console.log('Success payment verification successful:', data);
         
+        // Enhanced toast message for success payments (could be subscription or one-time)
+        const paymentType = data.isOneTimePayment ? 'payment' : 'subscription';
+        const message = `Your ${paymentType} has been activated successfully. Checking your access...`;
+        
         toast({
           title: "Payment Successful!",
-          description: "Your subscription has been activated. Checking your access...",
+          description: message,
         });
         
         // Refresh subscription status after successful payment
@@ -163,7 +171,7 @@ export const usePaymentVerification = () => {
           }
         });
       } else if (success === 'true') {
-        console.log('Handling success=true parameter');
+        console.log('Handling success=true parameter for any payment type');
         handleSuccessPayment().then((verificationSuccess) => {
           console.log('Success payment handling result:', verificationSuccess);
           if (verificationSuccess) {
