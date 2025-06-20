@@ -76,6 +76,7 @@ serve(async (req) => {
     const hasActiveSub = subscriptions.data.length > 0;
     let subscriptionTier = null;
     let subscriptionEnd = null;
+    let hasValidAccess = false;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
@@ -92,24 +93,52 @@ serve(async (req) => {
       } else {
         subscriptionTier = "Enterprise";
       }
+      hasValidAccess = true;
       logStep("Determined subscription tier", { priceId, amount, subscriptionTier });
     } else {
-      logStep("No active subscription found");
+      logStep("No active subscription found, checking for successful one-time payments");
+      
+      // Check for successful one-time payments
+      const charges = await stripe.charges.list({
+        customer: customerId,
+        limit: 10,
+      });
+      
+      const successfulCharges = charges.data.filter(charge => 
+        charge.status === 'succeeded' && 
+        charge.amount > 0 &&
+        !charge.refunded
+      );
+      
+      if (successfulCharges.length > 0) {
+        logStep("Found successful one-time payments", { count: successfulCharges.length });
+        // For one-time payments, set a default tier based on the highest payment amount
+        const highestAmount = Math.max(...successfulCharges.map(charge => charge.amount));
+        if (highestAmount <= 999) {
+          subscriptionTier = "Basic";
+        } else if (highestAmount <= 1999) {
+          subscriptionTier = "Premium";
+        } else {
+          subscriptionTier = "Enterprise";
+        }
+        hasValidAccess = true;
+        logStep("Determined subscription tier from one-time payment", { highestAmount, subscriptionTier });
+      }
     }
 
     await supabaseClient.from("subscribers").upsert({
       email: user.email,
       user_id: user.id,
       stripe_customer_id: customerId,
-      subscribed: hasActiveSub,
+      subscribed: hasValidAccess,
       subscription_tier: subscriptionTier,
       subscription_end: subscriptionEnd,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'email' });
 
-    logStep("Updated database with subscription info", { subscribed: hasActiveSub, subscriptionTier });
+    logStep("Updated database with subscription info", { subscribed: hasValidAccess, subscriptionTier });
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
+      subscribed: hasValidAccess,
       subscription_tier: subscriptionTier,
       subscription_end: subscriptionEnd
     }), {
