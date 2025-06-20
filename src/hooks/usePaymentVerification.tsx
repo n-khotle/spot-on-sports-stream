@@ -3,13 +3,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
-import { useNavigate } from 'react-router-dom';
 import { useSubscription } from './useSubscription';
 
 export const usePaymentVerification = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const { checkSubscription } = useSubscription();
   const [verifying, setVerifying] = useState(false);
 
@@ -28,17 +26,12 @@ export const usePaymentVerification = () => {
         toast({
           title: "Payment Successful!",
           description: data.allocated && data.productName ? 
-            `You now have access to ${data.productName}. Redirecting to live stream...` :
+            `You now have access to ${data.productName}.` :
             "Your payment was successful!",
         });
         
         // Refresh subscription status after successful payment
         await checkSubscription();
-        
-        // Always redirect to live page after successful payment
-        setTimeout(() => {
-          navigate('/live');
-        }, 1500);
         
         return true;
       } else {
@@ -85,15 +78,11 @@ export const usePaymentVerification = () => {
         // Handle cases where we only have success=true parameter
         toast({
           title: "Payment Successful!",
-          description: "Your subscription has been activated. Checking your access...",
+          description: "Your subscription has been activated.",
         });
         
         // Refresh subscription status
-        checkSubscription().then(() => {
-          setTimeout(() => {
-            navigate('/live');
-          }, 1500);
-        });
+        checkSubscription();
         
         // Clean up URL
         const url = new URL(window.location.href);
