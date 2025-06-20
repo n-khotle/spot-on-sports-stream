@@ -1,9 +1,8 @@
 
+// reCAPTCHA configuration - PRODUCTION KEY
+export const RECAPTCHA_SITE_KEY = "6LcS3WcrAAAAAMXVE6M4I8yHLgMkA5XnUJLJCKZ9"; // Your production key
 
-// reCAPTCHA configuration - TEMPORARY TEST KEY
-export const RECAPTCHA_SITE_KEY = "6LcS3WcrAAAAAMXVE6M4I8yHLgMkA5XnUJLJCKZ9"; // Google's test key
-
-// This is Google's official test key that works on all domains for testing
-// If this works, then your production key needs domain authorization
-// To fix: Go to https://www.google.com/recaptcha/admin and add your domains
-
+// Make sure to add these domains in Google reCAPTCHA Admin Console:
+// - localhost (for local development)
+// - *.lovableproject.com (for Lovable preview)
+// - Your deployed domain (if you have one)
