@@ -51,8 +51,6 @@ const Subscription = () => {
     if (user) {
       fetchSubscriptionProducts();
     }
-
-    
   }, [user, authLoading, navigate]);
 
   // Handle payment success on page load
