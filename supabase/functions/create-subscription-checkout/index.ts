@@ -72,56 +72,8 @@ serve(async (req) => {
       throw new Error("This price is not active in Stripe");
     }
     
-    // Let's check the database connection and table structure first
-    logStep("Testing database connection");
-    
-    // Check subscription_products table
-    const { data: products, error: productsError } = await supabaseClient
-      .from("subscription_products")
-      .select("id, name, stripe_product_id, active")
-      .limit(5);
-    
-    logStep("Products table check", { products, error: productsError });
-    
-    // Check subscription_prices table with all fields
-    const { data: allPrices, error: allPricesError } = await supabaseClient
-      .from("subscription_prices")
-      .select("*")
-      .limit(10);
-    
-    logStep("All prices in database (detailed)", { allPrices, error: allPricesError });
-    
-    // Try searching for the exact price ID with different approaches
-    logStep("Searching for price ID with exact match", { searchingFor: priceId });
-    
-    // Method 1: Direct exact match
-    const { data: exactMatch, error: exactError } = await supabaseClient
-      .from("subscription_prices")
-      .select("*")
-      .eq("stripe_price_id", priceId);
-    
-    logStep("Exact match result", { exactMatch, error: exactError });
-    
-    // Method 2: Use ilike for case-insensitive search
-    const { data: ilikeMatch, error: ilikeError } = await supabaseClient
-      .from("subscription_prices")
-      .select("*")
-      .ilike("stripe_price_id", priceId);
-    
-    logStep("Case-insensitive match result", { ilikeMatch, error: ilikeError });
-    
-    // Method 3: Search all and filter manually
-    const { data: allPricesForFilter, error: filterError } = await supabaseClient
-      .from("subscription_prices")
-      .select("*");
-    
-    if (allPricesForFilter) {
-      const manualFilter = allPricesForFilter.filter(p => p.stripe_price_id === priceId);
-      logStep("Manual filter result", { manualFilter, totalPrices: allPricesForFilter.length });
-    }
-    
-    // Now let's specifically look for our price with the join
-    logStep("Looking up specific price with join", { priceId });
+    // Check if prices exist in database
+    logStep("Checking database for synced prices");
     
     const { data: dbPrices, error: priceError } = await supabaseClient
       .from("subscription_prices")
@@ -137,7 +89,7 @@ serve(async (req) => {
       `)
       .eq("stripe_price_id", priceId);
 
-    logStep("Database query result for specific price with join", { dbPrices, error: priceError });
+    logStep("Database query result", { dbPrices, error: priceError });
 
     if (priceError) {
       logStep("Database query error", { error: priceError });

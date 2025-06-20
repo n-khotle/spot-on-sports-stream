@@ -56,7 +56,13 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     logStep("Attempting to authenticate user");
     
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    // Use anon key client for user auth check
+    const supabaseAuthClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
+    
+    const { data: userData, error: userError } = await supabaseAuthClient.auth.getUser(token);
     if (userError) {
       logStep("ERROR: Authentication failed", { error: userError.message });
       return new Response(JSON.stringify({ 
@@ -79,7 +85,7 @@ serve(async (req) => {
     }
     logStep("User authenticated", { userId: user.id });
 
-    // Check if user is admin
+    // Check if user is admin using service role client
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('role')
@@ -133,7 +139,7 @@ serve(async (req) => {
     }
     logStep("Product ID received", { productId });
 
-    // Get product from database
+    // Get product from database using service role client
     const { data: product, error: productError } = await supabaseClient
       .from('subscription_products')
       .select('*')
@@ -186,7 +192,7 @@ serve(async (req) => {
         });
         logStep("Stripe product created successfully", { stripeProductId: stripeProduct.id });
 
-        // Update database with Stripe product ID
+        // Update database with Stripe product ID using service role client
         const { error: updateError } = await supabaseClient
           .from('subscription_products')
           .update({ stripe_product_id: stripeProduct.id })
@@ -197,10 +203,11 @@ serve(async (req) => {
           return new Response(JSON.stringify({ 
             error: `Failed to update product with Stripe ID: ${updateError.message}` 
           }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 500,
-          });
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
         }
+        logStep("Product updated with Stripe ID");
       } catch (stripeError) {
         logStep("ERROR: Failed to create Stripe product", { error: stripeError.message });
         return new Response(JSON.stringify({ 
@@ -212,7 +219,7 @@ serve(async (req) => {
       }
     }
 
-    // Get prices for this product
+    // Get prices for this product using service role client
     const { data: prices, error: pricesError } = await supabaseClient
       .from('subscription_prices')
       .select('*')
@@ -228,7 +235,10 @@ serve(async (req) => {
       });
     }
 
+    logStep("Found prices to sync", { count: prices?.length || 0 });
+
     // Sync prices with Stripe
+    let syncedPricesCount = 0;
     for (const price of prices || []) {
       try {
         let stripePrice;
@@ -262,7 +272,7 @@ serve(async (req) => {
 
             stripePrice = await stripe.prices.create(priceConfig);
 
-            // Update database with new Stripe price ID
+            // Update database with new Stripe price ID using service role client
             await supabaseClient
               .from('subscription_prices')
               .update({ stripe_price_id: stripePrice.id })
@@ -286,10 +296,10 @@ serve(async (req) => {
             };
           }
 
-          logStep("Creating Stripe price", { interval: price.interval, isOneTime: price.interval === 'once' });
+          logStep("Creating Stripe price", { interval: price.interval, isOneTime: price.interval === 'once', config: priceConfig });
           stripePrice = await stripe.prices.create(priceConfig);
 
-          // Update database with Stripe price ID
+          // Update database with Stripe price ID using service role client
           const { error: updatePriceError } = await supabaseClient
             .from('subscription_prices')
             .update({ stripe_price_id: stripePrice.id })
@@ -298,21 +308,24 @@ serve(async (req) => {
           if (updatePriceError) {
             logStep("ERROR: Failed to update price with Stripe ID", { error: updatePriceError.message });
             // Continue with other prices instead of failing completely
+          } else {
+            logStep("Price updated with Stripe ID", { priceId: price.id, stripePriceId: stripePrice.id });
           }
-          logStep("Stripe price created", { stripePriceId: stripePrice.id, interval: price.interval });
         }
+        syncedPricesCount++;
       } catch (priceError) {
         logStep("ERROR: Failed to sync price", { priceId: price.id, error: priceError.message });
         // Continue with other prices instead of failing completely
       }
     }
 
-    logStep("Product and prices synced successfully");
+    logStep("Product and prices synced successfully", { syncedPricesCount });
 
     return new Response(JSON.stringify({
       success: true,
       stripe_product_id: stripeProduct.id,
-      prices_count: prices?.length || 0
+      synced_prices_count: syncedPricesCount,
+      total_prices: prices?.length || 0
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
