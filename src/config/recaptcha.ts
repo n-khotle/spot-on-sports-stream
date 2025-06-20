@@ -1,6 +1,6 @@
 
 // reCAPTCHA configuration
-export const RECAPTCHA_SITE_KEY = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"; // Google's universal test key
+export const RECAPTCHA_SITE_KEY = "6LcS3WcrAAAAAMXVE6M4I8yHLgMkA5XnUJLJCKZ9"; // Google's universal test key
 
 // For production, you need to:
 // 1. Go to https://www.google.com/recaptcha/admin
