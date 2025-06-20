@@ -336,7 +336,7 @@ const Subscription = () => {
             <p className="text-muted-foreground text-sm">Please check back later or contact support if you need assistance.</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
             {products.map((product) => (
               <Card key={product.id} className="relative border-2 hover:border-primary/50 transition-colors">
                 <CardHeader className="text-center">

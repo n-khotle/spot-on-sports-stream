@@ -277,10 +277,10 @@ const Live = () => {
         <div className="space-y-8">
           {/* Live Matches Section */}
           <section>
-            <div className="flex items-center space-x-2 mb-6">
+            {/* <div className="flex items-center space-x-2 mb-6">
               <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
               <h1 className="text-3xl font-bold">Live Now</h1>
-            </div>
+            </div> */}
             {/* Live Stream Section */}
             {streamingSettings.length > 0 && liveGames.length === 0 && (
               <Card className="mb-6">
