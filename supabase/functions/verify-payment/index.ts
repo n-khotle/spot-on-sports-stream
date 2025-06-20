@@ -49,115 +49,21 @@ serve(async (req) => {
       const productId = session.metadata?.product_id;
       const productName = session.metadata?.product_name;
       
-      logStep("Payment confirmed as paid", { userId, productId, productName, mode: session.mode });
+      logStep("Payment confirmed as paid", { userId, productId, productName });
       
-      if (userId && userId !== "guest") {
-        // Get user email for subscriber record
-        const { data: profile, error: profileError } = await supabaseService
-          .from("profiles")
-          .select("email")
-          .eq("user_id", userId)
-          .single();
-
-        if (profileError) {
-          logStep("Error fetching user profile", { error: profileError });
-        }
-
-        const userEmail = profile?.email;
+      if (userId && userId !== "guest" && productId && productId !== "default_product") {
+        logStep(`Allocating product ${productId} to user ${userId}`);
         
-        // Get or create Stripe customer
-        let stripeCustomerId = session.customer as string;
-        
-        if (!stripeCustomerId && userEmail) {
-          const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-          if (customers.data.length > 0) {
-            stripeCustomerId = customers.data[0].id;
-          }
-        }
-
-        logStep("Customer ID determined", { stripeCustomerId });
-
-        // Determine subscription tier and end date based on payment mode
-        let subscriptionTier: string;
-        let subscriptionEnd: string;
-        
-        if (session.mode === "payment") {
-          // One-time payment
-          subscriptionTier = "once off";
-          // Set subscription end to one month from now
-          const endDate = new Date();
-          endDate.setMonth(endDate.getMonth() + 1);
-          subscriptionEnd = endDate.toISOString();
-        } else {
-          // Subscription payment
-          subscriptionTier = productName || "Basic";
-          // For subscriptions, set end date to next day (will be updated by subscription hooks)
-          const endDate = new Date();
-          endDate.setDate(endDate.getDate() + 1);
-          subscriptionEnd = endDate.toISOString();
-        }
-
-        logStep("Subscription details determined", { 
-          subscriptionTier, 
-          subscriptionEnd, 
-          mode: session.mode 
+        // Use the database function to allocate the product to the user
+        const { error: allocationError } = await supabaseService.rpc('allocate_product_to_user', {
+          target_user_id: userId,
+          product_id: productId
         });
-
-        // Update subscribers table
-        if (userEmail) {
-          const { error: subscriberError } = await supabaseService
-            .from("subscribers")
-            .upsert({
-              user_id: userId,
-              email: userEmail,
-              stripe_customer_id: stripeCustomerId,
-              subscribed: true,
-              subscription_tier: subscriptionTier,
-              subscription_end: subscriptionEnd,
-              updated_at: new Date().toISOString(),
-            }, { onConflict: 'email' });
-
-          if (subscriberError) {
-            logStep("Error updating subscriber", { error: subscriberError });
-          } else {
-            logStep("Subscriber updated successfully", { 
-              email: userEmail, 
-              tier: subscriptionTier,
-              end: subscriptionEnd 
-            });
-          }
-        }
-
-        // Update profiles table with stripe_customer_id and allocate product if specified
-        const profileUpdates: any = {};
         
-        if (stripeCustomerId) {
-          // Check if customer_id field exists in profiles, if not we'll skip this update
-          try {
-            await supabaseService
-              .from("profiles")
-              .update({ stripe_customer_id: stripeCustomerId })
-              .eq("user_id", userId);
-            logStep("Profile updated with stripe_customer_id", { stripeCustomerId });
-          } catch (error) {
-            logStep("Note: stripe_customer_id field may not exist in profiles table", { error });
-          }
-        }
-
-        // Allocate product if productId is provided and valid
-        if (productId && productId !== "default_product") {
-          logStep(`Allocating product ${productId} to user ${userId}`);
-          
-          const { error: allocationError } = await supabaseService.rpc('allocate_product_to_user', {
-            target_user_id: userId,
-            product_id: productId
-          });
-          
-          if (allocationError) {
-            logStep("Error allocating product to user", { error: allocationError });
-          } else {
-            logStep("Product successfully allocated to user", { userId, productId, productName });
-          }
+        if (allocationError) {
+          logStep("Error allocating product to user", { error: allocationError });
+        } else {
+          logStep("Product successfully allocated to user", { userId, productId, productName });
         }
         
         // Update order status to paid if order exists
@@ -174,15 +80,13 @@ serve(async (req) => {
           success: true, 
           status: "paid",
           allocated: true,
-          productName: subscriptionTier,
-          subscriptionTier: subscriptionTier,
-          subscriptionEnd: subscriptionEnd
+          productName: productName
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         });
       } else {
-        logStep("No user allocation needed - guest user");
+        logStep("No product allocation needed - guest user or no product specified");
         
         return new Response(JSON.stringify({ 
           success: true, 
