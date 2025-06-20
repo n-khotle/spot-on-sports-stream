@@ -46,8 +46,8 @@ const Schedule = () => {
   };
 
   const handleWatchClick = (game: Game) => {
-    // Always redirect to Subscription page
-    navigate('/subscription');
+    // Check user subscription handled on live page
+    navigate('/live');
   };
 
   if (loading) {

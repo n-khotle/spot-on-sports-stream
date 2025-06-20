@@ -188,7 +188,7 @@ const Subscription = () => {
       const { data, error } = await supabase.functions.invoke("create-subscription-checkout", {
         body: {
           priceId,
-          successUrl: `${window.location.origin}/subscription?success=true`,
+          successUrl: 'http://localhost:8080/live',
           cancelUrl: `${window.location.origin}/subscription?canceled=true`,
         },
         headers: {
@@ -198,6 +198,17 @@ const Subscription = () => {
 
       console.log("Checkout response:", { data, error });
 
+      // assign subscription status to subscribed user 
+      if (error === null) {
+        const { data: productsData, error: productsError } = await supabase
+        .from("subscription_products")
+        .select(`
+          *,
+          subscription_prices (*)
+        `)
+        .eq("active", true);
+      }
+    
       if (error) {
         console.error("Checkout error:", error);
         throw new Error(error.message || "Failed to create checkout session");
