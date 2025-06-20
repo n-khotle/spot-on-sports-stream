@@ -37,6 +37,8 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
       expand: ['line_items', 'subscription']
     });
+
+    console.log("SESSSION", session);
     
     logStep("Retrieved checkout session", { 
       sessionId, 
@@ -106,6 +108,8 @@ serve(async (req) => {
           .single();
 
         if (subscriptionPrice) {
+      console.log('found subscription Price'), subscriptionPrice
+
           const product = (subscriptionPrice as any).subscription_products;
           productName = product.name;
           
@@ -135,12 +139,15 @@ serve(async (req) => {
               productName 
             });
           } else {
+            console.log('failed')
             logStep("Failed to allocate product", { error: allocateError });
           }
         }
       }
-    } else if (session.mode === 'payment') {
+    } else {
+      // else if (session.mode === 'payment') {
       // Handle one-time payment
+      console.log('were in else')
       const lineItem = session.line_items?.data[0];
       if (lineItem?.price?.metadata?.product_id) {
         const productId = lineItem.price.metadata.product_id;
@@ -153,6 +160,8 @@ serve(async (req) => {
           .single();
 
         if (product) {
+      console.log('found product', product)
+
           productName = product.name;
           
           // Allocate product to user
@@ -189,6 +198,9 @@ serve(async (req) => {
       productName 
     });
 
+      console.log('paid')
+
+
     return new Response(JSON.stringify({ 
       success: true, 
       status: 'paid',
@@ -200,6 +212,8 @@ serve(async (req) => {
     });
 
   } catch (error) {
+      console.log('errored')
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in verify-payment", { message: errorMessage });
     
