@@ -14,17 +14,29 @@ export const usePaymentVerification = () => {
   const [verifying, setVerifying] = useState(false);
 
   const verifyPayment = async (sessionId: string) => {
-    if (!sessionId) return false;
+    if (!sessionId) {
+      console.log('No session ID provided for verification');
+      return false;
+    }
     
+    console.log('Starting payment verification for session:', sessionId);
     setVerifying(true);
+    
     try {
       const { data, error } = await supabase.functions.invoke('verify-payment', {
         body: { sessionId }
       });
 
-      if (error) throw error;
+      console.log('Payment verification response:', { data, error });
+
+      if (error) {
+        console.error('Payment verification error:', error);
+        throw error;
+      }
 
       if (data?.success && data?.status === 'paid') {
+        console.log('Payment verification successful:', data);
+        
         toast({
           title: "Payment Successful!",
           description: data.allocated && data.productName ? 
@@ -33,15 +45,18 @@ export const usePaymentVerification = () => {
         });
         
         // Refresh subscription status after successful payment
+        console.log('Refreshing subscription status...');
         await checkSubscription();
         
         // Always redirect to live page after successful payment
         setTimeout(() => {
+          console.log('Redirecting to live page');
           navigate('/live');
         }, 1500);
         
         return true;
       } else {
+        console.log('Payment verification pending or failed:', data);
         toast({
           title: "Payment Verification",
           description: "Your payment is being processed. Please wait a moment.",
@@ -68,20 +83,26 @@ export const usePaymentVerification = () => {
     const sessionId = urlParams.get('session_id');
     const success = urlParams.get('success');
     
+    console.log('URL params check:', { sessionId, success, user: !!user });
+    
     if ((sessionId || success === 'true') && user) {
       console.log('Payment verification triggered:', { sessionId, success });
       
       if (sessionId) {
+        console.log('Verifying payment with session ID:', sessionId);
         verifyPayment(sessionId).then((verificationSuccess) => {
+          console.log('Payment verification result:', verificationSuccess);
           if (verificationSuccess) {
             // Clean up URL
             const url = new URL(window.location.href);
             url.searchParams.delete('session_id');
             url.searchParams.delete('success');
             window.history.replaceState({}, '', url.toString());
+            console.log('URL cleaned up');
           }
         });
       } else if (success === 'true') {
+        console.log('Handling success=true parameter');
         // Handle cases where we only have success=true parameter
         toast({
           title: "Payment Successful!",

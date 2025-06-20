@@ -33,19 +33,22 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
-    // Retrieve the checkout session
+    // Retrieve the checkout session with expanded data
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['line_items', 'subscription']
+      expand: ['line_items', 'line_items.data.price', 'subscription', 'customer']
     });
     
     logStep("Retrieved checkout session", { 
       sessionId, 
       status: session.payment_status,
       mode: session.mode,
-      customer: session.customer
+      customer: session.customer,
+      customerEmail: session.customer_email,
+      lineItemsCount: session.line_items?.data?.length || 0
     });
 
     if (session.payment_status !== 'paid') {
+      logStep("Payment not completed", { status: session.payment_status });
       return new Response(JSON.stringify({ 
         success: false, 
         status: session.payment_status 
@@ -62,15 +65,22 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Get customer details
-    const customer = await stripe.customers.retrieve(session.customer as string);
-    const customerEmail = (customer as any).email;
+    // Get customer email - try multiple sources
+    let customerEmail = session.customer_email;
+    if (!customerEmail && session.customer) {
+      const customer = await stripe.customers.retrieve(session.customer as string);
+      customerEmail = (customer as any).email;
+    }
     
     if (!customerEmail) {
+      logStep("ERROR: No customer email found", { 
+        customerEmail: session.customer_email,
+        customerId: session.customer 
+      });
       throw new Error("Customer email not found");
     }
 
-    logStep("Found customer", { email: customerEmail });
+    logStep("Found customer email", { email: customerEmail });
 
     // Find user by email
     const { data: profile, error: profileError } = await supabaseClient
@@ -80,23 +90,36 @@ serve(async (req) => {
       .single();
 
     if (profileError || !profile) {
-      logStep("User profile not found", { email: customerEmail, error: profileError });
-      throw new Error("User profile not found");
+      logStep("ERROR: User profile not found", { 
+        email: customerEmail, 
+        error: profileError?.message 
+      });
+      throw new Error(`User profile not found for email: ${customerEmail}`);
     }
 
     logStep("Found user profile", { userId: profile.user_id });
 
     let productAllocated = false;
     let productName = "";
+    let subscriptionUpdated = false;
 
+    // Handle subscription mode
     if (session.mode === 'subscription' && session.subscription) {
-      // Handle subscription - update subscribers table and allocate products
-      const subscription = session.subscription as any;
-      const priceId = session.line_items?.data[0]?.price?.id;
+      logStep("Processing subscription payment");
       
+      const subscription = session.subscription as any;
+      const lineItem = session.line_items?.data[0];
+      const priceId = lineItem?.price?.id;
+      
+      logStep("Subscription details", {
+        subscriptionId: subscription.id,
+        priceId,
+        currentPeriodEnd: subscription.current_period_end
+      });
+
       if (priceId) {
         // Find the subscription product associated with this price
-        const { data: subscriptionPrice } = await supabaseClient
+        const { data: subscriptionPrice, error: priceError } = await supabaseClient
           .from('subscription_prices')
           .select(`
             *,
@@ -105,12 +128,22 @@ serve(async (req) => {
           .eq('stripe_price_id', priceId)
           .single();
 
-        if (subscriptionPrice) {
+        logStep("Price lookup result", { 
+          found: !!subscriptionPrice, 
+          error: priceError?.message 
+        });
+
+        if (subscriptionPrice && (subscriptionPrice as any).subscription_products) {
           const product = (subscriptionPrice as any).subscription_products;
           productName = product.name;
           
+          logStep("Found subscription product", { 
+            productId: product.id, 
+            productName 
+          });
+
           // Update subscribers table
-          await supabaseClient.from('subscribers').upsert({
+          const subscriberUpdate = {
             user_id: profile.user_id,
             email: customerEmail,
             stripe_customer_id: session.customer,
@@ -118,90 +151,138 @@ serve(async (req) => {
             subscription_tier: productName,
             subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
             updated_at: new Date().toISOString(),
-          }, { onConflict: 'email' });
+          };
 
-          // Allocate product to user
+          logStep("Updating subscribers table", subscriberUpdate);
+
+          const { error: subscriberError } = await supabaseClient
+            .from('subscribers')
+            .upsert(subscriberUpdate, { onConflict: 'email' });
+
+          if (subscriberError) {
+            logStep("ERROR updating subscribers", { error: subscriberError.message });
+          } else {
+            logStep("Successfully updated subscribers table");
+            subscriptionUpdated = true;
+          }
+
+          // Allocate product to user profile
+          logStep("Allocating product to user", { 
+            userId: profile.user_id, 
+            productId: product.id 
+          });
+
           const { error: allocateError } = await supabaseClient
             .rpc('allocate_product_to_user', {
               target_user_id: profile.user_id,
               product_id: product.id
             });
 
-          if (!allocateError) {
-            productAllocated = true;
-            logStep("Product allocated to user", { 
-              userId: profile.user_id, 
-              productId: product.id,
-              productName 
-            });
+          if (allocateError) {
+            logStep("ERROR allocating product", { error: allocateError.message });
           } else {
-            logStep("Failed to allocate product", { error: allocateError });
+            logStep("Successfully allocated product to user");
+            productAllocated = true;
           }
+        } else {
+          logStep("WARNING: No subscription product found for price", { priceId });
         }
       }
-    } else if (session.mode === 'payment') {
-      // Handle one-time payment
+    } 
+    // Handle one-time payment mode
+    else if (session.mode === 'payment') {
+      logStep("Processing one-time payment");
+      
       const lineItem = session.line_items?.data[0];
-      if (lineItem?.price?.metadata?.product_id) {
-        const productId = lineItem.price.metadata.product_id;
+      const priceId = lineItem?.price?.id;
+      
+      logStep("One-time payment details", { priceId });
+
+      if (priceId) {
+        // Check if this price has product metadata
+        const price = await stripe.prices.retrieve(priceId);
+        const productId = price.metadata?.product_id;
         
-        // Get product details
-        const { data: product } = await supabaseClient
-          .from('subscription_products')
-          .select('*')
-          .eq('id', productId)
-          .single();
+        logStep("Price metadata", { productId, metadata: price.metadata });
 
-        if (product) {
-          productName = product.name;
-          
-          // Allocate product to user
-          const { error: allocateError } = await supabaseClient
-            .rpc('allocate_product_to_user', {
-              target_user_id: profile.user_id,
-              product_id: productId
-            });
+        if (productId) {
+          // Get product details
+          const { data: product, error: productError } = await supabaseClient
+            .from('subscription_products')
+            .select('*')
+            .eq('id', productId)
+            .single();
 
-          if (!allocateError) {
-            productAllocated = true;
-            logStep("One-time product allocated to user", { 
-              userId: profile.user_id, 
-              productId,
+          if (product && !productError) {
+            productName = product.name;
+            
+            logStep("Found one-time product", { 
+              productId, 
               productName 
             });
+
+            // Allocate product to user
+            const { error: allocateError } = await supabaseClient
+              .rpc('allocate_product_to_user', {
+                target_user_id: profile.user_id,
+                product_id: productId
+              });
+
+            if (allocateError) {
+              logStep("ERROR allocating one-time product", { error: allocateError.message });
+            } else {
+              logStep("Successfully allocated one-time product");
+              productAllocated = true;
+            }
+          } else {
+            logStep("ERROR: Product not found", { productId, error: productError?.message });
           }
+        } else {
+          logStep("WARNING: No product_id in price metadata");
         }
       }
     }
 
     // Create order record
-    await supabaseClient.from('orders').insert({
+    const orderData = {
       user_id: profile.user_id,
       stripe_session_id: sessionId,
       amount: session.amount_total,
       currency: session.currency || 'usd',
       status: 'paid',
-    });
+    };
 
-    logStep("Payment verification completed", { 
-      success: true, 
-      allocated: productAllocated,
-      productName 
-    });
+    logStep("Creating order record", orderData);
 
-    return new Response(JSON.stringify({ 
-      success: true, 
+    const { error: orderError } = await supabaseClient
+      .from('orders')
+      .insert(orderData);
+
+    if (orderError) {
+      logStep("ERROR creating order", { error: orderError.message });
+    } else {
+      logStep("Successfully created order record");
+    }
+
+    const result = {
+      success: true,
       status: 'paid',
       allocated: productAllocated,
-      productName: productName || "Subscription"
-    }), {
+      subscriptionUpdated,
+      productName: productName || "Purchase",
+      userId: profile.user_id
+    };
+
+    logStep("Payment verification completed", result);
+
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in verify-payment", { message: errorMessage });
+    logStep("ERROR in verify-payment", { message: errorMessage, stack: error instanceof Error ? error.stack : undefined });
     
     return new Response(JSON.stringify({ 
       error: errorMessage,
