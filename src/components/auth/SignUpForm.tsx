@@ -22,6 +22,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
   const [signupPassword, setSignupPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [recaptchaError, setRecaptchaError] = useState(false);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const validatePasswordMatch = () => {
@@ -43,12 +44,36 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
 
   const handleRecaptchaChange = (token: string | null) => {
     setRecaptchaToken(token);
+    setRecaptchaError(false);
+  };
+
+  const handleRecaptchaError = () => {
+    console.log('reCAPTCHA error occurred');
+    setRecaptchaError(true);
+    setRecaptchaToken(null);
+    toast({
+      title: "reCAPTCHA Error",
+      description: "There was an issue loading reCAPTCHA. Please try refreshing the page.",
+      variant: "destructive",
+    });
   };
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    // Check if reCAPTCHA failed to load
+    if (recaptchaError) {
+      setError('reCAPTCHA failed to load. Please refresh the page and try again.');
+      toast({
+        title: "Error",
+        description: "reCAPTCHA failed to load. Please refresh the page and try again.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     // Validate reCAPTCHA
     if (!recaptchaToken) {
@@ -184,22 +209,31 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         )}
       </div>
 
-      {/* reCAPTCHA */}
+      {/* reCAPTCHA with error handling */}
       <div className="flex justify-center">
         <ReCAPTCHA
           ref={recaptchaRef}
           sitekey={RECAPTCHA_SITE_KEY}
           onChange={handleRecaptchaChange}
+          onErrored={handleRecaptchaError}
           theme="light"
         />
       </div>
+
+      {recaptchaError && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            reCAPTCHA failed to load. Please refresh the page and try again.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Button type="submit" className="w-full" disabled={isLoading || !recaptchaToken}>
+      <Button type="submit" className="w-full" disabled={isLoading || (!recaptchaToken && !recaptchaError)}>
         {isLoading ? (
           <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
         ) : (
