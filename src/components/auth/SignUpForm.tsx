@@ -23,6 +23,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [recaptchaError, setRecaptchaError] = useState(false);
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const validatePasswordMatch = () => {
@@ -43,6 +44,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
   };
 
   const handleRecaptchaChange = (token: string | null) => {
+    console.log('reCAPTCHA token received:', token ? 'valid' : 'null');
     setRecaptchaToken(token);
     setRecaptchaError(false);
   };
@@ -51,11 +53,18 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
     console.log('reCAPTCHA error occurred');
     setRecaptchaError(true);
     setRecaptchaToken(null);
+    setRecaptchaLoaded(false);
     toast({
       title: "reCAPTCHA Error",
       description: "There was an issue loading reCAPTCHA. Please try refreshing the page.",
       variant: "destructive",
     });
+  };
+
+  const handleRecaptchaLoad = () => {
+    console.log('reCAPTCHA loaded successfully');
+    setRecaptchaLoaded(true);
+    setRecaptchaError(false);
   };
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -64,7 +73,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
     setError('');
 
     // Check if reCAPTCHA failed to load
-    if (recaptchaError) {
+    if (recaptchaError || !recaptchaLoaded) {
       setError('reCAPTCHA failed to load. Please refresh the page and try again.');
       toast({
         title: "Error",
@@ -209,21 +218,25 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
         )}
       </div>
 
-      {/* reCAPTCHA with error handling */}
+      {/* reCAPTCHA with enhanced error handling */}
       <div className="flex justify-center">
         <ReCAPTCHA
           ref={recaptchaRef}
           sitekey={RECAPTCHA_SITE_KEY}
           onChange={handleRecaptchaChange}
           onErrored={handleRecaptchaError}
+          onLoad={handleRecaptchaLoad}
           theme="light"
         />
       </div>
 
-      {recaptchaError && (
+      {(recaptchaError || (!recaptchaLoaded && !recaptchaError)) && (
         <Alert variant="destructive">
           <AlertDescription>
-            reCAPTCHA failed to load. Please refresh the page and try again.
+            {recaptchaError 
+              ? "reCAPTCHA failed to load. Please refresh the page and try again."
+              : "Loading reCAPTCHA..."
+            }
           </AlertDescription>
         </Alert>
       )}
@@ -233,7 +246,7 @@ const SignUpForm = ({ onSuccess }: SignUpFormProps) => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Button type="submit" className="w-full" disabled={isLoading || (!recaptchaToken && !recaptchaError)}>
+      <Button type="submit" className="w-full" disabled={isLoading || (!recaptchaToken && recaptchaLoaded)}>
         {isLoading ? (
           <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
         ) : (
