@@ -23,11 +23,15 @@ export const usePaymentVerification = () => {
       if (error) throw error;
 
       if (data?.success && data?.status === 'paid') {
+        const isOneTimePayment = data?.subscriptionTier === 'once off';
+        
         toast({
           title: "Payment Successful!",
-          description: data.allocated && data.productName ? 
-            `You now have access to ${data.productName}. Redirecting to live stream...` :
-            "Your payment was successful!",
+          description: isOneTimePayment 
+            ? `One-time payment completed! You now have ${data.subscriptionTier} access. Redirecting to live stream...`
+            : data.allocated && data.productName ? 
+              `You now have access to ${data.productName}. Redirecting to live stream...` :
+              "Your payment was successful!",
         });
         
         // Always redirect to live page after successful payment
