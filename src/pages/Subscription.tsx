@@ -34,7 +34,7 @@ interface SubscriptionProduct {
 
 const Subscription = () => {
   const { user, session, loading: authLoading } = useAuth();
-  const { subscribed, subscriptionTier, loading: subLoading } = useSubscription();
+  const { subscribed, subscriptionTier, loading: subLoading, checkSubscription } = useSubscription();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [products, setProducts] = useState<SubscriptionProduct[]>([]);
@@ -53,6 +53,41 @@ const Subscription = () => {
     }
   }, [user, authLoading, navigate]);
 
+  // Handle payment success on page load
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const canceled = urlParams.get('canceled');
+    
+    if (success === 'true' && user) {
+      toast({
+        title: "Payment Successful!",
+        description: "Your subscription has been activated. Refreshing your access...",
+      });
+      
+      // Refresh subscription status after successful payment
+      setTimeout(() => {
+        checkSubscription();
+      }, 1000);
+      
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('success');
+      window.history.replaceState({}, '', url.toString());
+    } else if (canceled === 'true') {
+      toast({
+        title: "Payment Canceled",
+        description: "Your payment was canceled. You can try again anytime.",
+        variant: "default",
+      });
+      
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('canceled');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [user, toast, checkSubscription]);
+
   // Auto-refresh when window gains focus (user returns from admin panel)
   useEffect(() => {
     const handleFocus = () => {
@@ -64,11 +99,13 @@ const Subscription = () => {
       }
       // Refresh products when window gains focus
       fetchSubscriptionProducts();
+      // Also refresh subscription status
+      checkSubscription();
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [subscribing]);
+  }, [subscribing, checkSubscription]);
 
   // Auto-reset processing state after 5 seconds (reduced from 10)
   useEffect(() => {
