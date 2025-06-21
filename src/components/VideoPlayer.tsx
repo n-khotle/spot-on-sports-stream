@@ -58,10 +58,32 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
 
   let hideControlsTimeout: NodeJS.Timeout;
 
-  // Detect iOS devices
+  // Enhanced iOS detection
   const isIOS = () => {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const userAgent = navigator.userAgent.toLowerCase();
+    const platform = navigator.platform?.toLowerCase() || '';
+    
+    // Check for iPhone, iPad, iPod
+    if (/iphone|ipad|ipod/.test(userAgent)) {
+      return true;
+    }
+    
+    // Check for newer iPad detection (iOS 13+)
+    if (platform === 'macintel' && navigator.maxTouchPoints > 1) {
+      return true;
+    }
+    
+    // Additional Safari iOS check
+    if (/safari/.test(userAgent) && /mobile/.test(userAgent)) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Check if device is specifically iPhone (not iPad)
+  const isIPhone = () => {
+    return /iphone|ipod/.test(navigator.userAgent.toLowerCase());
   };
 
   // Check access once when component mounts or when user/subscription changes
@@ -279,30 +301,40 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
   }, [src, isLive, accessChecked, hasAccess]); // Only reinitialize when these specific values change
 
   useEffect(() => {
+    const video = videoRef.current;
+    
     const handleFullscreenChange = () => {
-      // Check both document fullscreen and video fullscreen for iOS
       const isDocumentFullscreen = !!document.fullscreenElement;
-      const video = videoRef.current;
-      const isVideoFullscreen = video && (video as any).webkitDisplayingFullscreen;
-      
-      setIsFullscreen(isDocumentFullscreen || isVideoFullscreen);
+      setIsFullscreen(isDocumentFullscreen);
     };
 
     const handleWebkitFullscreenChange = () => {
-      const video = videoRef.current;
       if (video && isIOS()) {
-        setIsFullscreen((video as any).webkitDisplayingFullscreen || false);
+        const isVideoFullscreen = !!(video as any).webkitDisplayingFullscreen;
+        console.log('VideoPlayer: Webkit fullscreen change:', isVideoFullscreen);
+        setIsFullscreen(isVideoFullscreen);
       }
     };
 
+    const handleWebkitBeginFullscreen = () => {
+      console.log('VideoPlayer: Webkit begin fullscreen');
+      setIsFullscreen(true);
+    };
+
+    const handleWebkitEndFullscreen = () => {
+      console.log('VideoPlayer: Webkit end fullscreen');
+      setIsFullscreen(false);
+    };
+
+    // Add standard fullscreen listeners
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     
-    // iOS specific fullscreen events
-    const video = videoRef.current;
+    // Add iOS specific listeners if video element exists
     if (video && isIOS()) {
-      video.addEventListener('webkitbeginfullscreen', () => setIsFullscreen(true));
-      video.addEventListener('webkitendfullscreen', () => setIsFullscreen(false));
+      video.addEventListener('webkitfullscreenchange', handleWebkitFullscreenChange);
+      video.addEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
+      video.addEventListener('webkitendfullscreen', handleWebkitEndFullscreen);
     }
 
     return () => {
@@ -310,8 +342,9 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       
       if (video && isIOS()) {
-        video.removeEventListener('webkitbeginfullscreen', () => setIsFullscreen(true));
-        video.removeEventListener('webkitendfullscreen', () => setIsFullscreen(false));
+        video.removeEventListener('webkitfullscreenchange', handleWebkitFullscreenChange);
+        video.removeEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
+        video.removeEventListener('webkitendfullscreen', handleWebkitEndFullscreen);
       }
     };
   }, []);
@@ -375,20 +408,31 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
 
     try {
       if (isIOS() && video) {
-        // iOS: Use native video fullscreen
-        console.log('VideoPlayer: Using iOS native fullscreen');
+        console.log('VideoPlayer: iOS fullscreen toggle, current state:', isFullscreen);
+        
         if (!isFullscreen) {
-          // Enter fullscreen
+          // For iOS, we need to trigger fullscreen on the video element
           if ((video as any).webkitEnterFullscreen) {
+            console.log('VideoPlayer: Using webkitEnterFullscreen');
             (video as any).webkitEnterFullscreen();
+          } else if ((video as any).webkitRequestFullscreen) {
+            console.log('VideoPlayer: Using webkitRequestFullscreen');
+            await (video as any).webkitRequestFullscreen();
           } else if ((video as any).requestFullscreen) {
+            console.log('VideoPlayer: Using standard requestFullscreen');
             await video.requestFullscreen();
+          } else {
+            console.log('VideoPlayer: No fullscreen method available, using controls attribute');
+            video.setAttribute('controls', 'true');
+            setTimeout(() => video.removeAttribute('controls'), 100);
           }
         } else {
           // Exit fullscreen
           if ((video as any).webkitExitFullscreen) {
+            console.log('VideoPlayer: Using webkitExitFullscreen');
             (video as any).webkitExitFullscreen();
           } else if (document.exitFullscreen) {
+            console.log('VideoPlayer: Using document.exitFullscreen');
             await document.exitFullscreen();
           }
         }
@@ -402,7 +446,12 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
         }
       }
     } catch (error) {
-      console.error('Fullscreen error:', error);
+      console.error('VideoPlayer: Fullscreen error:', error);
+      // Fallback: show native controls briefly to allow user to go fullscreen manually
+      if (isIOS() && video) {
+        video.setAttribute('controls', 'true');
+        setTimeout(() => video.removeAttribute('controls'), 2000);
+      }
     }
   };
 
@@ -437,6 +486,13 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
       showControlsTemporarily();
     } else {
       togglePlay();
+    }
+  };
+
+  // Handle double-tap for fullscreen on mobile
+  const handleVideoDoubleClick = () => {
+    if (isIOS() || window.innerWidth <= 768) {
+      toggleFullscreen();
     }
   };
 
@@ -479,12 +535,16 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
           poster={poster}
           className="w-full h-full object-cover"
           onClick={handleVideoClick}
+          onDoubleClick={handleVideoDoubleClick}
           playsInline
           preload="metadata"
           controls={false}
           muted={isMuted}
-          webkit-playsinline="true"
-          x-webkit-airplay="allow"
+          {...(isIOS() && {
+            'webkit-playsinline': 'true',
+            'playsinline': true,
+            'x-webkit-airplay': 'allow'
+          })}
         />
       ) : (
         <div className="w-full h-full bg-black flex items-center justify-center">
@@ -641,6 +701,15 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
                 </Button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* iOS Fullscreen Hint */}
+      {isIOS() && hasAccess && !isPlaying && !isLoading && (
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-30">
+          <div className="bg-black/70 text-white text-sm px-3 py-1 rounded-full backdrop-blur-sm">
+            Double-tap for fullscreen
           </div>
         </div>
       )}
