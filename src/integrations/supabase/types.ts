@@ -239,6 +239,11 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          contact_address: string | null
+          contact_description: string | null
+          contact_email: string | null
+          contact_hours: string | null
+          contact_phone: string | null
           created_at: string
           facebook_handle: string | null
           google_analytics_id: string | null
@@ -252,6 +257,11 @@ export type Database = {
           x_handle: string | null
         }
         Insert: {
+          contact_address?: string | null
+          contact_description?: string | null
+          contact_email?: string | null
+          contact_hours?: string | null
+          contact_phone?: string | null
           created_at?: string
           facebook_handle?: string | null
           google_analytics_id?: string | null
@@ -265,6 +275,11 @@ export type Database = {
           x_handle?: string | null
         }
         Update: {
+          contact_address?: string | null
+          contact_description?: string | null
+          contact_email?: string | null
+          contact_hours?: string | null
+          contact_phone?: string | null
           created_at?: string
           facebook_handle?: string | null
           google_analytics_id?: string | null

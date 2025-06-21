@@ -1,5 +1,4 @@
-
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -54,49 +53,103 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [quality, setQuality] = useState('Auto');
-  const [userProfile, setUserProfile] = useState<any>(null);
   const [hasAccess, setHasAccess] = useState(false);
+  const [accessChecked, setAccessChecked] = useState(false);
 
   let hideControlsTimeout: NodeJS.Timeout;
 
-  // Fetch user profile to check allocated products and determine access
+  // Check access once when component mounts or when user/subscription changes
   useEffect(() => {
+    let isMounted = true;
+    
     const checkAccess = async () => {
+      console.log('VideoPlayer: Checking access for user:', user?.id);
+      
       if (!user) {
-        setHasAccess(false);
+        console.log('VideoPlayer: No user, setting hasAccess to false');
+        if (isMounted) {
+          setHasAccess(false);
+          setAccessChecked(true);
+        }
         return;
       }
       
       try {
+        // User has access if they have a subscription
+        if (subscribed) {
+          console.log('VideoPlayer: User has subscription access');
+          if (isMounted) {
+            setHasAccess(true);
+            setAccessChecked(true);
+          }
+          return;
+        }
+
+        // Check for allocated products
         const { data, error } = await supabase
           .from('profiles')
           .select('allocated_subscription_products')
           .eq('user_id', user.id)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('VideoPlayer: Error fetching user profile:', error);
+          if (isMounted) {
+            setHasAccess(false);
+            setAccessChecked(true);
+          }
+          return;
+        }
         
-        setUserProfile(data);
-        
-        // User has access if they have a subscription OR allocated products
         const hasAllocatedProducts = data?.allocated_subscription_products && data.allocated_subscription_products.length > 0;
-        setHasAccess(subscribed || hasAllocatedProducts);
+        console.log('VideoPlayer: Has allocated products:', hasAllocatedProducts);
+        
+        if (isMounted) {
+          setHasAccess(hasAllocatedProducts);
+          setAccessChecked(true);
+        }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
-        setHasAccess(false);
+        console.error('VideoPlayer: Error in access check:', error);
+        if (isMounted) {
+          setHasAccess(false);
+          setAccessChecked(true);
+        }
       }
     };
 
     checkAccess();
-  }, [user, subscribed]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, subscribed]); // Only depend on user ID and subscription status
 
+  // Initialize video only after access is confirmed
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !hasAccess) return;
+    if (!video || !accessChecked || !hasAccess || !src) {
+      console.log('VideoPlayer: Skipping video initialization', { 
+        hasVideo: !!video, 
+        accessChecked, 
+        hasAccess, 
+        hasSrc: !!src 
+      });
+      return;
+    }
 
-    // Initialize HLS if needed
+    console.log('VideoPlayer: Initializing video with src:', src);
+    setIsLoading(true);
+
+    // Clean up any existing HLS instance
+    if (hlsRef.current) {
+      console.log('VideoPlayer: Cleaning up existing HLS instance');
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
     const initializeVideo = () => {
       if (src.includes('.m3u8')) {
+        console.log('VideoPlayer: Initializing HLS stream');
         // HLS stream
         if (Hls.isSupported()) {
           const hls = new Hls({
@@ -110,42 +163,49 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
           hls.attachMedia(video);
           
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            console.log('HLS manifest loaded');
+            console.log('VideoPlayer: HLS manifest loaded successfully');
             setIsLoading(false);
           });
           
           hls.on(Hls.Events.ERROR, (event, data) => {
-            console.error('HLS error:', data);
+            console.error('VideoPlayer: HLS error:', data);
             if (data.fatal) {
+              setIsLoading(false);
               switch (data.type) {
                 case Hls.ErrorTypes.NETWORK_ERROR:
-                  console.log('Fatal network error, try to recover');
+                  console.log('VideoPlayer: Fatal network error, trying to recover');
                   hls.startLoad();
                   break;
                 case Hls.ErrorTypes.MEDIA_ERROR:
-                  console.log('Fatal media error, try to recover');
+                  console.log('VideoPlayer: Fatal media error, trying to recover');
                   hls.recoverMediaError();
                   break;
                 default:
-                  console.log('Fatal error, cannot recover');
+                  console.log('VideoPlayer: Fatal error, cannot recover');
                   hls.destroy();
+                  hlsRef.current = null;
                   break;
               }
             }
           });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          console.log('VideoPlayer: Using native HLS support');
           // Native HLS support (Safari)
           video.src = src;
+          setIsLoading(false);
         } else {
-          console.error('HLS is not supported in this browser');
+          console.error('VideoPlayer: HLS is not supported in this browser');
+          setIsLoading(false);
         }
       } else {
+        console.log('VideoPlayer: Loading regular video');
         // Regular video
         video.src = src;
       }
     };
 
     const handleLoadedMetadata = () => {
+      console.log('VideoPlayer: Video metadata loaded');
       if (!isLive) {
         setDuration(video.duration);
       }
@@ -156,39 +216,61 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
       setCurrentTime(video.currentTime);
     };
 
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
+    const handlePlay = () => {
+      console.log('VideoPlayer: Video started playing');
+      setIsPlaying(true);
+    };
+    
+    const handlePause = () => {
+      console.log('VideoPlayer: Video paused');
+      setIsPlaying(false);
+    };
+    
     const handleVolumeChange = () => {
       setVolume(video.volume);
       setIsMuted(video.muted);
     };
 
-    const handleCanPlay = () => setIsLoading(false);
+    const handleCanPlay = () => {
+      console.log('VideoPlayer: Video can play');
+      setIsLoading(false);
+    };
 
+    const handleError = () => {
+      console.error('VideoPlayer: Video error occurred');
+      setIsLoading(false);
+    };
+
+    // Add event listeners
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('volumechange', handleVolumeChange);
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('error', handleError);
 
+    // Initialize the video
     initializeVideo();
 
     return () => {
+      console.log('VideoPlayer: Cleaning up video event listeners');
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('volumechange', handleVolumeChange);
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('error', handleError);
       
       // Cleanup HLS
       if (hlsRef.current) {
+        console.log('VideoPlayer: Destroying HLS instance');
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
     };
-  }, [src, isLive, hasAccess]);
+  }, [src, isLive, accessChecked, hasAccess]); // Only reinitialize when these specific values change
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -201,7 +283,8 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
     };
   }, []);
 
-  const handleWatchLiveClick = () => {
+  const handleWatchLiveClick = useCallback(() => {
+    console.log('VideoPlayer: Watch live clicked, hasAccess:', hasAccess);
     if (!hasAccess) {
       navigate('/subscription');
       return;
@@ -210,12 +293,12 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
     const video = videoRef.current;
     if (video) {
       video.play().catch(error => {
-        console.error('Autoplay failed:', error);
+        console.error('VideoPlayer: Autoplay failed:', error);
       });
     }
-  };
+  }, [hasAccess, navigate]);
 
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     const video = videoRef.current;
     if (!video || !hasAccess) return;
 
@@ -224,7 +307,7 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
     } else {
       video.play();
     }
-  };
+  }, [isPlaying, hasAccess]);
 
   const handleSeek = (value: number[]) => {
     const video = videoRef.current;
@@ -301,6 +384,22 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
     }
   };
 
+  // Show loading state while checking access
+  if (!accessChecked) {
+    return (
+      <div 
+        className={cn(
+          "relative bg-black rounded-lg overflow-hidden",
+          "w-full aspect-video flex items-center justify-center",
+          isFullscreen && "!aspect-auto !w-screen !h-screen !rounded-none",
+          className
+        )}
+      >
+        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <div 
       ref={containerRef}
@@ -324,8 +423,6 @@ const VideoPlayer = ({ src, poster, title, isLive = false, className }: VideoPla
           poster={poster}
           className="w-full h-full object-cover"
           onClick={handleVideoClick}
-          onLoadStart={() => setIsLoading(true)}
-          onCanPlay={() => setIsLoading(false)}
           playsInline
           preload="metadata"
           controls={false}

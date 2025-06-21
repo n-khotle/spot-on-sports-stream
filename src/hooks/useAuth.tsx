@@ -208,22 +208,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       console.log('Successfully signed out');
       
-      // Force redirect to home page after a brief delay
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
+      // Redirect to landing page immediately
+      window.location.href = '/';
       
     } catch (error) {
       console.error('Error during sign out:', error);
       // Reset signing out flag on error
       setIsSigningOut(false);
-      // Even if there's an error, clear the local state and redirect
+      // Even if there's an error, clear the local state and redirect to landing page
       setUser(null);
       setSession(null);
       setProfile(null);
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
+      window.location.href = '/';
     }
   };
 

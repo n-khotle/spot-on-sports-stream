@@ -15,6 +15,7 @@ import PaymentSettings from "./pages/PaymentSettings";
 import Schedule from "./pages/Schedule";
 import Subscription from "./pages/Subscription";
 import News from "./pages/News";
+import ContactUs from "./pages/ContactUs";
 import AboutUs from "./pages/AboutUs";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -87,6 +88,7 @@ const AppContent = () => {
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/subscription" element={<Subscription />} />
         <Route path="/news" element={<News />} />
+        <Route path="/contact-us" element={<ContactUs />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route path="/refund-policy" element={<PrivacyPolicy />} />
         <Route path="/cancellation-policy" element={<CancellationPolicy />} />

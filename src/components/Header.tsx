@@ -46,6 +46,7 @@ const Header = () => {
             <Link to="/schedule" className="text-muted-foreground hover:text-primary transition-colors">Schedule</Link>
             <Link to="/subscription" className="text-muted-foreground hover:text-primary transition-colors">Packages</Link>
             <Link to="/news" className="text-muted-foreground hover:text-primary transition-colors">News</Link>
+            <Link to="/contact-us" className="text-muted-foreground hover:text-primary transition-colors">Contact</Link>
           </nav>
         </div>
 
@@ -120,14 +121,21 @@ const Header = () => {
                  >
                    Packages
                  </Link>
-                 <Link 
-                   to="/news" 
-                   className="text-lg font-medium hover:text-primary transition-colors"
-                   onClick={() => setMobileMenuOpen(false)}
-                 >
-                   News
-                 </Link>
-               </nav>
+                  <Link 
+                    to="/news" 
+                    className="text-lg font-medium hover:text-primary transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    News
+                  </Link>
+                  <Link 
+                    to="/contact-us" 
+                    className="text-lg font-medium hover:text-primary transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Contact
+                  </Link>
+                </nav>
             </SheetContent>
           </Sheet>
         </div>

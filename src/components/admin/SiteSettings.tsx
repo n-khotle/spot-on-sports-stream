@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Save, Image } from "lucide-react";
+import { Upload, Save, Image, Contact } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,6 +18,11 @@ interface SiteSettings {
   tiktok_handle: string | null;
   google_analytics_id: string | null;
   meta_pixel_id: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  contact_address: string | null;
+  contact_hours: string | null;
+  contact_description: string | null;
 }
 
 const SiteSettings = () => {
@@ -29,6 +35,11 @@ const SiteSettings = () => {
   const [tiktokHandle, setTiktokHandle] = useState("");
   const [googleAnalyticsId, setGoogleAnalyticsId] = useState("");
   const [metaPixelId, setMetaPixelId] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactAddress, setContactAddress] = useState("");
+  const [contactHours, setContactHours] = useState("");
+  const [contactDescription, setContactDescription] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -60,6 +71,11 @@ const SiteSettings = () => {
         setTiktokHandle(data.tiktok_handle || "");
         setGoogleAnalyticsId(data.google_analytics_id || "");
         setMetaPixelId(data.meta_pixel_id || "");
+        setContactEmail(data.contact_email || "");
+        setContactPhone(data.contact_phone || "");
+        setContactAddress(data.contact_address || "");
+        setContactHours(data.contact_hours || "");
+        setContactDescription(data.contact_description || "");
       }
     } catch (error) {
       console.error('Error fetching site settings:', error);
@@ -124,6 +140,11 @@ const SiteSettings = () => {
         tiktok_handle: tiktokHandle || null,
         google_analytics_id: googleAnalyticsId || null,
         meta_pixel_id: metaPixelId || null,
+        contact_email: contactEmail || null,
+        contact_phone: contactPhone || null,
+        contact_address: contactAddress || null,
+        contact_hours: contactHours || null,
+        contact_description: contactDescription || null,
       };
 
       if (settings) {
@@ -314,6 +335,66 @@ const SiteSettings = () => {
               />
               <p className="text-xs text-muted-foreground">
                 Your Facebook/Meta Pixel ID (15-16 digits)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Information */}
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Contact className="w-5 h-5 text-primary" />
+            <Label>Contact Information</Label>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="contactEmail">Email Address</Label>
+              <Input
+                id="contactEmail"
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                placeholder="contact@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactPhone">Phone Number</Label>
+              <Input
+                id="contactPhone"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="+1 (555) 123-4567"
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="contactAddress">Address</Label>
+              <Input
+                id="contactAddress"
+                value={contactAddress}
+                onChange={(e) => setContactAddress(e.target.value)}
+                placeholder="123 Main St, City, State 12345"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactHours">Business Hours</Label>
+              <Input
+                id="contactHours"
+                value={contactHours}
+                onChange={(e) => setContactHours(e.target.value)}
+                placeholder="Mon-Fri 9AM-5PM"
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="contactDescription">Contact Description</Label>
+              <Textarea
+                id="contactDescription"
+                value={contactDescription}
+                onChange={(e) => setContactDescription(e.target.value)}
+                placeholder="Additional information about contacting your organization..."
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                This description will appear on your Contact Us page
               </p>
             </div>
           </div>
