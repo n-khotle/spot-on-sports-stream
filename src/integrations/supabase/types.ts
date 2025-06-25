@@ -42,6 +42,72 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_data: {
+        Row: {
+          bandwidth: number
+          created_at: string | null
+          id: string
+          imported_at: string | null
+          user_ip_address: unknown
+          view_date: string
+          viewing_duration: number
+        }
+        Insert: {
+          bandwidth: number
+          created_at?: string | null
+          id?: string
+          imported_at?: string | null
+          user_ip_address: unknown
+          view_date: string
+          viewing_duration: number
+        }
+        Update: {
+          bandwidth?: number
+          created_at?: string | null
+          id?: string
+          imported_at?: string | null
+          user_ip_address?: unknown
+          view_date?: string
+          viewing_duration?: number
+        }
+        Relationships: []
+      }
+      daily_analytics: {
+        Row: {
+          analytics_date: string
+          average_bandwidth: number | null
+          average_viewing_duration: number | null
+          created_at: string | null
+          id: string
+          total_viewing_duration: number | null
+          total_views: number | null
+          unique_users: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          analytics_date: string
+          average_bandwidth?: number | null
+          average_viewing_duration?: number | null
+          created_at?: string | null
+          id?: string
+          total_viewing_duration?: number | null
+          total_views?: number | null
+          unique_users?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          analytics_date?: string
+          average_bandwidth?: number | null
+          average_viewing_duration?: number | null
+          created_at?: string | null
+          id?: string
+          total_viewing_duration?: number | null
+          total_views?: number | null
+          unique_users?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           created_at: string
@@ -477,6 +543,10 @@ export type Database = {
     Functions: {
       allocate_product_to_user: {
         Args: { target_user_id: string; product_id: string }
+        Returns: undefined
+      }
+      compile_daily_analytics: {
+        Args: { target_date: string }
         Returns: undefined
       }
       get_current_user_role: {

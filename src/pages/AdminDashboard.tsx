@@ -1,3 +1,4 @@
+
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +12,7 @@ import UserManagement from '@/components/admin/UserManagement';
 import SubscriptionManagement from '@/components/admin/SubscriptionManagement';
 import SiteSettings from '@/components/admin/SiteSettings';
 import BannerManagement from '@/components/admin/BannerManagement';
+import AnalyticsManagement from '@/components/admin/AnalyticsManagement';
 
 const AdminDashboard = () => {
   const { user, isAdmin, signOut, loading } = useAuth();
@@ -56,12 +58,13 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="games" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-8 max-w-6xl">
+          <TabsList className="grid w-full grid-cols-9 max-w-7xl">
             <TabsTrigger value="games">Games</TabsTrigger>
             <TabsTrigger value="news">News</TabsTrigger>
             <TabsTrigger value="pages">Pages</TabsTrigger>
             <TabsTrigger value="streaming">Streaming</TabsTrigger>
             <TabsTrigger value="banners">Banners</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -85,6 +88,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="banners" className="space-y-8">
             <BannerManagement />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-8">
+            <AnalyticsManagement />
           </TabsContent>
 
           <TabsContent value="subscriptions" className="space-y-8">
